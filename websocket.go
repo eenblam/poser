@@ -65,8 +65,7 @@ func (s *Server) Echo(w http.ResponseWriter, r *http.Request) {
 	room.Add(conn)
 	defer func() {
 		log.Printf("Closing connection to %s", conn.RemoteAddr())
-		room.Remove(conn)
-		if len(room.Conns) == 0 { // If everyone leaves, delete the room
+		if room.Remove(conn) == 0 { // If everyone has now left, delete the room
 			log.Printf("Deleting room %s", room.ID)
 			s.RoomCache.Delete(room.ID)
 		} else { // Otherwise, let remaining users know this user left

@@ -27,10 +27,15 @@ func (r *Room) Add(conn *Connection) {
 	r.Conns[conn] = true
 }
 
-func (r *Room) Remove(conn *Connection) {
+// Delete conn from room, and return number of remaining connections.
+//
+// This allows for an atomic check of the length after deletion
+// to confirm room is empty.
+func (r *Room) Remove(conn *Connection) int {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	delete(r.Conns, conn)
+	return len(r.Conns)
 }
 
 func (r *Room) String() string {
