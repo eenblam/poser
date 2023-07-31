@@ -40,11 +40,7 @@ func (r *Room) String() string {
 func (r *Room) Broadcast(from *Connection, message []byte) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
-	for conn := range r.Conns {
-		if conn != nil && conn != from {
-			conn.WriteMessage(websocket.TextMessage, message)
-		}
-	}
+	r.broadcastUnsafe(from, message)
 }
 
 func (r *Room) BroadcastConnections() {
@@ -66,5 +62,14 @@ func (r *Room) BroadcastConnections() {
 		return
 	}
 	// Broadcast to *all* connections (hence from=nil)
-	r.Broadcast(nil, bs)
+	r.broadcastUnsafe(nil, bs)
+}
+
+// Non-threadsafe broadcast; callers must handle locking.
+func (r *Room) broadcastUnsafe(from *Connection, message []byte) {
+	for conn := range r.Conns {
+		if conn != nil && conn != from {
+			conn.WriteMessage(websocket.TextMessage, message)
+		}
+	}
 }
