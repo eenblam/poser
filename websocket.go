@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -29,7 +31,6 @@ type Server struct {
 }
 
 func NewServer() *Server {
-	//return &Server{RoomCache: make(map[string]*Room)}
 	return &Server{RoomCache: sync.Map{}}
 }
 
@@ -74,17 +75,30 @@ func (s *Server) Echo(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Send user their ID
-	conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("{'type': 'connection', 'id': '%s'}", conn.ID)))
+	data, err := json.Marshal(struct {
+		Type string `json:"type"`
+		ID   string `json:"id"`
+	}{Type: "connection", ID: conn.ID})
+	if err != nil {
+		log.Printf("Error marshalling connection: %s", err)
+		conn.WriteControl(websocket.CloseMessage,
+			// Don't share actual error to avoid violating same-origin policy
+			websocket.FormatCloseMessage(websocket.CloseInternalServerErr, "Internal error"),
+			time.Now().Add(500*time.Millisecond))
+		return
+	}
+	conn.WriteMessage(websocket.TextMessage, data)
 	// Send all IDs
 	room.BroadcastConnections()
 
 	for {
 		mt, message, err := conn.ReadMessage()
 		if err != nil || mt == websocket.CloseMessage {
+			log.Printf("error reading message: %s", err)
 			break
 		}
 
-		// Just broadcast messages to all room members for now
+		// Just broadcast messages to all other room members for now
 		log.Printf("%s:%s: %s", room.ID, conn.RemoteAddr(), message)
 		go room.Broadcast(conn, message)
 	}

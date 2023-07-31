@@ -47,14 +47,16 @@ func (r *Room) Broadcast(from *Connection, message []byte) {
 	}
 }
 
-// TODO this could be a LOT nicer
 func (r *Room) BroadcastConnections() {
 	r.mux.Lock()
 	defer r.mux.Unlock()
+
+	// Build list of IDs
 	ids := make([]string, 0)
 	for conn := range r.Conns {
 		ids = append(ids, conn.ID)
 	}
+	// Create JSON
 	bs, err := json.Marshal(struct {
 		Type string   `json:"type"`
 		IDs  []string `json:"ids"`
@@ -63,9 +65,6 @@ func (r *Room) BroadcastConnections() {
 		log.Printf("Error marshalling connections: %s", err)
 		return
 	}
-	for conn := range r.Conns {
-		if conn != nil {
-			conn.WriteMessage(websocket.TextMessage, bs)
-		}
-	}
+	// Broadcast to *all* connections (hence from=nil)
+	r.Broadcast(nil, bs)
 }
