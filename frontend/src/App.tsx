@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
+import Canvas from './components/Canvas'
 import UserList from './components/UserList'
 import { Chat, Message } from './components/Chat'
 import WebSocketContext from './WebSocketContext'
