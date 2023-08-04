@@ -121,18 +121,23 @@ LOOP:
 			// Set message ID - these have to be distinct on the client side.
 			m.ID = fmt.Sprintf("msg-%s", uuid.New().String())
 			log.Printf("%s:%s: %s", room.ID, conn.RemoteAddr(), message)
-			raw, err := json.Marshal(m)
+			err = BroadcastType[*ChatMessage](room, nil, "chat", m)
 			if err != nil {
-				log.Printf("Error marshalling chat data: %s", err)
+				log.Println(err)
+			}
+			continue LOOP
+		case "draw":
+			m := &DrawMessage{}
+			err := json.Unmarshal(data, m)
+			if err != nil {
+				log.Printf("Error unmarshalling draw message: %s", err)
 				continue LOOP
 			}
-			out, err := json.Marshal(&Message{Type: "chat", Data: raw})
+			//TODO set source user ID
+			err = BroadcastType[*DrawMessage](room, conn, "draw", m)
 			if err != nil {
-				log.Printf("Error marshalling chat message: %s", err)
-				continue LOOP
+				log.Println(err)
 			}
-			// Send message to all users, including sender (sender also requires back-end verification)
-			go room.Broadcast(nil, out)
 			continue LOOP
 		default:
 			//DEBUG Just broadcast messages to all other room members for now
@@ -155,6 +160,13 @@ type ChatMessage struct {
 	//TODO can I parse a timestamp as a time.Time?
 	Timestamp int    `json:"timestamp"`
 	User      string `json:"user"`
+}
+
+type DrawMessage struct {
+	LastX int `json:"lastX"`
+	LastY int `json:"lastY"`
+	X     int `json:"x"`
+	Y     int `json:"y"`
 }
 
 func ParseMessage(bs []byte) (messageType string, data []byte, err error) {

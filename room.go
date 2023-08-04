@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 
@@ -46,6 +47,24 @@ func (r *Room) Broadcast(from *Connection, message []byte) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	r.broadcastUnsafe(from, message)
+}
+
+// BroadcastT broadcasts a message of type T to all connections in the room.
+// If from is non-nil, that connection will be omitted.
+// If the message is successfully marshalled to JSON, it will be sent in a separate goroutine.
+//
+// Note that this can't be a method since it's a generic function.
+func BroadcastType[T any](room *Room, from *Connection, messageType string, message T) error {
+	rawJson, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("error marshalling message of type %T to data: %w", message, err)
+	}
+	bs, err := json.Marshal(&Message{Type: messageType, Data: rawJson})
+	if err != nil {
+		return fmt.Errorf("error marshalling message: %w", err)
+	}
+	go room.Broadcast(from, bs)
+	return nil
 }
 
 func (r *Room) BroadcastConnections() {

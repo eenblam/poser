@@ -1,4 +1,13 @@
-import { useEffect, useRef } from 'react';
+import { createContext, useContext, useEffect, useRef } from 'react';
+import WebSocketContext from '../WebSocketContext';
+
+
+class DrawCallback {
+    constructor(
+        public callback: (d: DrawData) => void = (_: DrawData) => {},
+    ) {}
+}
+const DrawCallbackContext = createContext<DrawCallback>(new DrawCallback());
 
 /*
 // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/buttons
@@ -49,6 +58,11 @@ class DrawData {
 
 function Canvas() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const ws = useContext(WebSocketContext);
+    if (ws === null) {
+        console.error("got a null websocket")
+    }
+    const drawCallback = useContext(DrawCallbackContext);
 
     useEffect(() => {
         if (canvasRef.current === null) { return; }
@@ -77,23 +91,24 @@ function Canvas() {
         */
         //canvas.width = window.innerWidth;
         //canvas.height = window.innerHeight;
-        ctx.clearRect(0,   0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         let drawing = false;
         let first = true;
         const drawData = new DrawData(0, 0, 0, 0);
 
         function draw(d: DrawData) {
-                ctx.beginPath();
-                ctx.moveTo(d.lastX, d.lastY);
-                ctx.lineTo(d.x, d.y);
+            ctx.beginPath();
+            ctx.moveTo(d.lastX, d.lastY);
+            ctx.lineTo(d.x, d.y);
 
-                ctx.strokeStyle = 'pink'; //TODO player color
-                ctx.lineWidth = 5;
-                ctx.lineCap = 'round';
-                ctx.stroke();
-                ctx.closePath();
+            ctx.strokeStyle = 'pink'; //TODO player color
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.closePath();
         }
+        drawCallback.callback = draw;
 
         function move(e: MouseEvent) {
             if (drawing) {
@@ -103,7 +118,14 @@ function Canvas() {
                 }
                 drawData.update(e.offsetX, e.offsetY);
                 draw(drawData);
-                //TODO send(drawData);
+                if (ws !== null) {
+                    ws.send(JSON.stringify({
+                        type: 'draw',
+                        data: drawData,
+                    }));
+                } else {
+                    console.error("cannot send draw data: no WebSocket")
+                }
             }
         }
         canvas.onmousemove = move;
@@ -127,6 +149,7 @@ function Canvas() {
 
         return () => { // cleanup
             window.onresize = null;
+            drawCallback.callback = (_: DrawData) => { console.error("draw callback called after cleanup"); };
         };
 
     }, []);
@@ -136,4 +159,4 @@ function Canvas() {
     )
 }
 
-export default Canvas
+export { Canvas, DrawCallback, DrawCallbackContext };
