@@ -21,6 +21,32 @@ enum MouseButton {
     Forward = 4,
 }
 
+class DrawData {
+    constructor(
+        public lastX: number,
+        public lastY: number,
+        public x: number,
+        public y: number,
+    ) {}
+
+    // Reset all coordinates to the same point.
+    // Used to start a new stroke, allows a dot.
+    reset(x: number, y: number) {
+        this.lastX = x;
+        this.lastY = y;
+        this.x = x;
+        this.y = y;
+    }
+
+    // Cycles the coordinates. Used to track an in-progress stroke.
+    update(x: number, y: number) {
+        this.lastX = this.x;
+        this.lastY = this.y;
+        this.x = x;
+        this.y = y;
+    }
+}
+
 function Canvas() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -53,42 +79,49 @@ function Canvas() {
         //canvas.height = window.innerHeight;
         ctx.clearRect(0,   0, canvas.width, canvas.height);
 
-        let lastPoint = { x: 0, y: 0, first: true}
         let drawing = false;
-        function move(e: MouseEvent) {
-            if (drawing) {
-                if (lastPoint.first) {
-                    lastPoint = {x: e.offsetX, y: e.offsetY, first: false}
-                }
+        let first = true;
+        const drawData = new DrawData(0, 0, 0, 0);
 
+        function draw(d: DrawData) {
                 ctx.beginPath();
-                ctx.moveTo(lastPoint.x, lastPoint.y);
-                ctx.lineTo(e.offsetX, e.offsetY);
+                ctx.moveTo(d.lastX, d.lastY);
+                ctx.lineTo(d.x, d.y);
 
                 ctx.strokeStyle = 'pink'; //TODO player color
                 ctx.lineWidth = 5;
                 ctx.lineCap = 'round';
                 ctx.stroke();
                 ctx.closePath();
-                console.log(lastPoint);
+        }
 
-                lastPoint = {x: e.offsetX, y: e.offsetY, first: false}
+        function move(e: MouseEvent) {
+            if (drawing) {
+                if (first) {
+                    drawData.reset(e.offsetX, e.offsetY);
+                    first = false;
+                }
+                drawData.update(e.offsetX, e.offsetY);
+                draw(drawData);
+                //TODO send(drawData);
             }
         }
         canvas.onmousemove = move;
         canvas.onmousedown = (e: MouseEvent) => {
             if (e.button != MouseButton.Primary) { return; }
-            lastPoint.first = true;
+            drawData.reset(e.offsetX, e.offsetY);
+            first = true;
             drawing = true;
+            draw(drawData);
         }
         canvas.onmouseup = (e: MouseEvent) => {
             if (e.button != MouseButton.Primary) { return; }
-            lastPoint.first = true;
+            first = true;
             drawing = false;
         }
         canvas.onmouseleave = (_: MouseEvent) => {
             // If we've left the canvas, stop drawing.
-            lastPoint.first = true;
+            first = true;
             drawing = false;
         }
 
