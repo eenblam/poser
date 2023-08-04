@@ -42,7 +42,7 @@ func (s *Server) GetOrCreateRoom(roomId string) *Room {
 	return room.(*Room)
 }
 
-func (s *Server) Echo(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	roomId, ok := mux.Vars(r)["room"]
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)

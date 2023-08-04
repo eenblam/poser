@@ -17,7 +17,7 @@ func main() {
 	//r.HandleFunc("/gallery/{id:[0-9]+}", GalleryHandler)
 
 	server := NewServer()
-	r.HandleFunc("/ws/{room}", server.Echo)
+	r.HandleFunc("/ws/{room}", server.HandleWebsocket)
 
 	http.Handle("/", r)
 	log.Fatal(http.ListenAndServe(":8080", nil))
