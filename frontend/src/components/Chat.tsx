@@ -7,16 +7,16 @@ interface ChatProps {
   
 function Chat(props: ChatProps) {
     const messages = props.messages;
-    const listItems = messages.sort((a,b) => a.timestamp-b.timestamp).map((m: Message) => {
+    const chatMessages = messages.sort((a,b) => a.timestamp-b.timestamp).map((m: Message) => {
         const className = `player-${m.playerNumber}`
-        return (<li key={m.id} className={className}><ChatItem message={m} /></li>);
+        return (<p key={m.id} className={className}><ChatItem message={m} /></p>);
     }
     );
 
     return (
-        <div>
+        <div id="chat-widget">
             <h2>Chat</h2>
-            <ul>{listItems}</ul>
+            <div>{chatMessages}</div>
             <ChatInput />
         </div>
     );

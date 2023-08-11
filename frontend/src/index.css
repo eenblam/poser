@@ -118,3 +118,7 @@ button:focus-visible {
 .player-offline {
   display: hidden;
 }
+
+#chat-widget {
+  text-align: left;
+}
