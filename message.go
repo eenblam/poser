@@ -12,7 +12,8 @@ type Message struct {
 }
 
 type ChatMessage struct {
-	ID string `json:"id"`
+	ID           string `json:"id"`
+	PlayerNumber int    `json:"playerNumber"`
 	//TODO sanitize this
 	Text string `json:"text"`
 	//TODO can I parse a timestamp as a time.Time?

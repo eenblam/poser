@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"sync"
 
@@ -17,19 +18,42 @@ type Room struct {
 	mux    sync.Mutex
 	Server *Server
 	ID     string
-	Conns  map[*Connection]bool
-	Size   int
+	// Map to check membership of conn, as well as count of active players
+	Conns map[*Connection]bool
+	// Maximum number of players in room
+	Size int
+	// Ordered mapping of position to player
+	Slots []*Connection
 }
 
 func NewRoom(id string, size int) *Room {
 	//TODO validate room size, return error
-	return &Room{ID: id, Conns: make(map[*Connection]bool), Size: size}
+	slots := make([]*Connection, size)
+	for i := range slots {
+		slots[i] = nil
+	}
+	return &Room{
+		ID:    id,
+		Conns: make(map[*Connection]bool),
+		Size:  size,
+		Slots: slots,
+	}
 }
 
 func (r *Room) Add(conn *Connection) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	if len(r.Conns) < r.Size {
+		// Find a slot for user
+		for i, slot := range r.Slots {
+			if slot == nil { // add user
+				r.Slots[i] = conn
+				conn.PlayerNumber = i + 1
+				break
+			} else if i == (r.Size - 1) { // no slots!
+				return fmt.Errorf("expected open slot in room %s but found none", r.ID)
+			}
+		}
 		r.Conns[conn] = true
 		return nil
 	} else {
@@ -47,6 +71,12 @@ func (r *Room) Remove(conn *Connection) int {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	delete(r.Conns, conn)
+	// Remember: PlayerNumber is 1-indexed
+	if conn.PlayerNumber <= len(r.Slots) {
+		r.Slots[conn.PlayerNumber-1] = nil
+	} else {
+		log.Printf("Error: conn %s has player number %d in room of size %d", conn.ID, conn.PlayerNumber, r.Size)
+	}
 	return len(r.Conns)
 }
 
@@ -80,8 +110,13 @@ func (r *Room) BroadcastConnections() {
 
 	// Build list of IDs
 	ids := make([]string, 0)
-	for conn := range r.Conns {
-		ids = append(ids, conn.ID)
+	// Get these from slots in order to maintain player order
+	for _, conn := range r.Slots {
+		if conn == nil {
+			ids = append(ids, "")
+		} else {
+			ids = append(ids, conn.ID)
+		}
 	}
 	// Create JSON
 	bs, err := json.Marshal(struct {

@@ -7,8 +7,10 @@ interface ChatProps {
   
 function Chat(props: ChatProps) {
     const messages = props.messages;
-    const listItems = messages.sort((a,b) => a.timestamp-b.timestamp).map((m: Message) =>
-        <li key={m.id}><ChatItem message={m} /></li>
+    const listItems = messages.sort((a,b) => a.timestamp-b.timestamp).map((m: Message) => {
+        const className = `player-${m.playerNumber}`
+        return (<li key={m.id} className={className}><ChatItem message={m} /></li>);
+    }
     );
 
     return (
@@ -28,7 +30,7 @@ function ChatItem(props: ChatItemProps) {
     const m = props.message;
     return (
         <div>
-            <p>{m.user}: {m.text}</p>
+            <p>Player #{m.playerNumber}: {m.text}</p>
         </div>
     );
 }
@@ -36,6 +38,7 @@ function ChatItem(props: ChatItemProps) {
 class Message {
     constructor(
         public id: string,
+        public playerNumber: number,
         public user: string,
         public timestamp: number,
         public text: string,
@@ -60,7 +63,8 @@ function ChatInput() {
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (ws !== null) {
-            let m = new Message('', '', Date.now(), message)
+            // Most of these are overwritten on the server side except timestamp and message
+            let m = new Message('', 0, '', Date.now(), message)
             ws.send(m.toWSMessage())
             setMessage('');
         } else {

@@ -44,12 +44,13 @@ function App() {
           break;
         case 'ids':
           console.log(`Ids: ${data.ids}`);
-          // TODO update this to use backend data when available
-          let users = data.ids.map((i: string) => new User(i, "", "", false));
+          // Note: playerNumber (idx) is 1-indexed, not 0
+          let users = data.ids.map((id: string, idx: number) => new User(id, idx+1, "", false))
+                              .filter((u: User) => u.id !== ""); // ignore empty slots
           setUserList(users);
           break;
         case 'chat':
-          let m = new Message(d.id, d.user, d.timestamp, d.text);
+          let m = new Message(d.id, d.playerNumber, d.user, d.timestamp, d.text);
           console.log(`Chat: ${m.toWSMessage()}`);
           setMessages((messages) => [...messages, m]);
           break;

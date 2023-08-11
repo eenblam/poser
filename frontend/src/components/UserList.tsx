@@ -5,17 +5,19 @@ interface UserListProps {
 class User {
   constructor(
     public id: string,
+    public playerNumber: number,
     public name: string,
-    public color: string,
     public owner: boolean,
   ) {}
 }
 
 function UserList(props: UserListProps) {
   const users = props.users;
-  const listItems = users.map((user: User) =>
-    <li key={user.id}>{user.id}</li>
-  );
+  const listItems = users.map((user: User) => {
+    const className = `player-${user.playerNumber}`
+    const userName = `Player #${user.playerNumber}`;
+    return (<li key={user.playerNumber} className={className}>{userName}</li>);
+  });
   return (
     <div>
       <h2>Users</h2>

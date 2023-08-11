@@ -21,7 +21,8 @@ const roomSize = 8
 // Connection is a wrapper around websocket.Conn that also stores a local ID
 type Connection struct {
 	*websocket.Conn
-	ID string
+	ID           string
+	PlayerNumber int
 }
 
 func (c *Connection) Notify(message string, isErr bool) {
@@ -68,7 +69,12 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	room := s.GetOrCreateRoom(roomId)
 
 	wsConn, err := upgrader.Upgrade(w, r, nil)
-	conn := &Connection{wsConn, fmt.Sprintf("user-%s", uuid.New().String())}
+	conn := &Connection{
+		Conn: wsConn,
+		ID:   fmt.Sprintf("user-%s", uuid.New().String()),
+		// PlayerNumber is for distinguishing things like user's color. Assigned later.
+		PlayerNumber: 0,
+	}
 	defer conn.Close()
 	if err != nil {
 		// Upgrade() already wrote an error message, so just log error and return.
@@ -78,7 +84,12 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	//TODO handle case where user ID already exists
 	if err = room.Add(conn); err != nil {
-		conn.Notify("Room is currently full.", true)
+		if err == ErrRoomFull {
+			conn.Notify("Room is currently full.", true)
+		} else {
+			log.Printf("Error adding user to room: %s", err)
+			conn.Notify("Couldn't add user to room.", true)
+		}
 		// For now, let's just close the websocket. Later, we could implement spectating.
 		return
 	}
@@ -137,6 +148,7 @@ LOOP:
 			//TODO sanitize text
 			// Set user ID, ignore anything client may have set.
 			m.User = conn.ID
+			m.PlayerNumber = conn.PlayerNumber
 			// Set message ID - these have to be distinct on the client side.
 			m.ID = fmt.Sprintf("msg-%s", uuid.New().String())
 			log.Printf("%s:%s: %s", room.ID, conn.RemoteAddr(), message)

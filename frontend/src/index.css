@@ -12,6 +12,16 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+
+  /* poser vars */
+  --player-1: #ff3232;
+  --player-2: #ff9232;
+  --player-3: #e7ff32;
+  --player-4: #32ff87;
+  --player-5: #32ffee;
+  --player-6: #3295ff;
+  --player-7: #c132ff;
+  --player-8: #ff326f;
 }
 
 a {
@@ -71,4 +81,40 @@ button:focus-visible {
 .notification-error {
   color: #242424;
   background-color: rgba(255, 252, 80, 0.87);
+}
+
+.player-1 {
+  color: var(--player-1);
+}
+
+.player-2 {
+  color: var(--player-2);
+}
+
+.player-3 {
+  color: var(--player-3);
+}
+
+.player-4 {
+  color: var(--player-4);
+}
+
+.player-5 {
+  color: var(--player-5);
+}
+
+.player-6 {
+  color: var(--player-6);
+}
+
+.player-7 {
+  color: var(--player-7);
+}
+
+.player-8 {
+  color: var(--player-8);
+}
+
+.player-offline {
+  display: hidden;
 }
