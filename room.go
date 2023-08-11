@@ -2,12 +2,14 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
 	"sync"
 
 	"github.com/gorilla/websocket"
 )
+
+var ErrRoomFull = errors.New("Room is full")
 
 type Room struct {
 	// This could also be a sync.Map,
@@ -16,16 +18,25 @@ type Room struct {
 	Server *Server
 	ID     string
 	Conns  map[*Connection]bool
+	Size   int
 }
 
-func NewRoom(id string) *Room {
-	return &Room{ID: id, Conns: make(map[*Connection]bool)}
+func NewRoom(id string, size int) *Room {
+	//TODO validate room size, return error
+	return &Room{ID: id, Conns: make(map[*Connection]bool), Size: size}
 }
 
-func (r *Room) Add(conn *Connection) {
+func (r *Room) Add(conn *Connection) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
-	r.Conns[conn] = true
+	if len(r.Conns) < r.Size {
+		r.Conns[conn] = true
+		return nil
+	} else {
+		// Feature: add user to queue, allow spectating
+		log.Printf("room %s full at %d/%d", r.ID, len(r.Conns), r.Size)
+		return ErrRoomFull
+	}
 }
 
 // Delete conn from room, and return number of remaining connections.
@@ -55,13 +66,9 @@ func (r *Room) Broadcast(from *Connection, message []byte) {
 //
 // Note that this can't be a method since it's a generic function.
 func BroadcastType[T any](room *Room, from *Connection, messageType string, message T) error {
-	rawJson, err := json.Marshal(message)
+	bs, err := MakeMessage[T](messageType, message)
 	if err != nil {
-		return fmt.Errorf("error marshalling message of type %T to data: %w", message, err)
-	}
-	bs, err := json.Marshal(&Message{Type: messageType, Data: rawJson})
-	if err != nil {
-		return fmt.Errorf("error marshalling message: %w", err)
+		return err
 	}
 	go room.Broadcast(from, bs)
 	return nil

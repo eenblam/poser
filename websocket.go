@@ -15,10 +15,25 @@ import (
 
 // Taken with much inspiration from https://dev.to/nyxtom/realtime-collaborative-drawing-with-canvas-and-webrtc-2d01
 
+// TODO make this configurable on room creation
+const roomSize = 8
+
 // Connection is a wrapper around websocket.Conn that also stores a local ID
 type Connection struct {
 	*websocket.Conn
 	ID string
+}
+
+func (c *Connection) Notify(message string, isErr bool) {
+	bs, err := MakeMessage("notification", &NotificationMessage{
+		Timestamp: time.Now(),
+		Message:   message,
+		IsError:   true,
+	})
+	if err != nil {
+		log.Printf("failed to notify client: %s", err)
+	}
+	c.WriteMessage(websocket.TextMessage, bs)
 }
 
 var upgrader = websocket.Upgrader{
@@ -35,7 +50,8 @@ func NewServer() *Server {
 }
 
 func (s *Server) GetOrCreateRoom(roomId string) *Room {
-	room, loaded := s.RoomCache.LoadOrStore(roomId, NewRoom(roomId))
+	//TODO get roomSize from / form
+	room, loaded := s.RoomCache.LoadOrStore(roomId, NewRoom(roomId, roomSize))
 	if !loaded {
 		log.Printf("Created new room %s", roomId)
 	}
@@ -60,9 +76,12 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO limit room size. Error if room is full.
 	//TODO handle case where user ID already exists
-	room.Add(conn)
+	if err = room.Add(conn); err != nil {
+		conn.Notify("Room is currently full.", true)
+		// For now, let's just close the websocket. Later, we could implement spectating.
+		return
+	}
 	log.Printf("New connection from %s", conn.RemoteAddr())
 	defer func() {
 		log.Printf("Closing connection to %s", conn.RemoteAddr())

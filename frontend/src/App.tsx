@@ -1,7 +1,8 @@
 import { useRef, useState, useEffect } from 'react'
 import { Canvas, DrawCallback, DrawCallbackContext } from './components/Canvas'
-import { User, UserList} from './components/UserList'
 import { Chat, Message } from './components/Chat'
+import { User, UserList} from './components/UserList'
+import { Notification, Notifications } from './components/Notifications'
 import WebSocketContext from './WebSocketContext'
 import './App.css'
 
@@ -14,6 +15,7 @@ function App() {
   let [_, setUserId] = useState<string>('...loading...');
   let [userList, setUserList] = useState<User[]>([]);
   let [messages, setMessages] = useState<Message[]>([]);
+  let [notifications, setNotifications] = useState<Notification[]>([]);
   let connRef = useRef<WebSocket | null>(conn);
   let drawRef = useRef<DrawCallback>(new DrawCallback((_) => {
     console.error("draw callback called before initialization");
@@ -35,6 +37,7 @@ function App() {
     };
     conn.onmessage = (e) => {
       let data = JSON.parse(e.data);
+      const d = data.data; // may be undefined
       switch (data.type) {
         case 'connection':
           setUserId(data.id);
@@ -46,13 +49,17 @@ function App() {
           setUserList(users);
           break;
         case 'chat':
-          let d = data.data
           let m = new Message(d.id, d.user, d.timestamp, d.text);
           console.log(`Chat: ${m.toWSMessage()}`);
           setMessages((messages) => [...messages, m]);
           break;
         case 'draw':
           drawRef.current.callback(data.data);
+          break;
+        case 'notification':
+          let n = new Notification(d.timestamp, d.message, d.isError)
+          // We can do .sort((a,b) => a.timestamp-b.timestamp) if we want timestamp ordering, but for now order of arrival seems best.
+          setNotifications((ns) => [...ns, n]);
           break;
         case undefined:
           console.log("Undefined message type");
@@ -77,6 +84,7 @@ function App() {
       <h1>Poser</h1>
       <WebSocketContext.Provider value={connRef.current}>
       <DrawCallbackContext.Provider value={drawRef.current}>
+        <Notifications notifications={notifications}/>
         <UserList users={userList} />
         <Chat messages={messages} />
         <Canvas/>

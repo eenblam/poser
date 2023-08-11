@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"time"
 )
 
 type Message struct {
@@ -25,6 +27,12 @@ type DrawMessage struct {
 	Y     int `json:"y"`
 }
 
+type NotificationMessage struct {
+	Timestamp time.Time `json:"timestamp"`
+	Message   string    `json:"message"`
+	IsError   bool      `json:"isError"`
+}
+
 func ParseMessage(bs []byte) (messageType string, data []byte, err error) {
 	var message Message
 	err = json.Unmarshal(bs, &message)
@@ -32,4 +40,16 @@ func ParseMessage(bs []byte) (messageType string, data []byte, err error) {
 		return "", nil, err
 	}
 	return message.Type, message.Data, nil
+}
+
+func MakeMessage[T any](messageType string, message T) ([]byte, error) {
+	rawJson, err := json.Marshal(message)
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling message of type %T to data: %w", message, err)
+	}
+	bs, err := json.Marshal(&Message{Type: messageType, Data: rawJson})
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling message: %w", err)
+	}
+	return bs, nil
 }
