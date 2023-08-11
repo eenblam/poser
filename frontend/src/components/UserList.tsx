@@ -19,7 +19,7 @@ function UserList(props: UserListProps) {
     return (<li key={user.playerNumber} className={className}>{userName}</li>);
   });
   return (
-    <div>
+    <div id="userlist-widget">
       <h2>Users</h2>
       <ul>{listItems}</ul>
     </div>
