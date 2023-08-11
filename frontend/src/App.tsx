@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { Canvas, DrawCallback, DrawCallbackContext } from './components/Canvas'
-import UserList from './components/UserList'
+import { User, UserList} from './components/UserList'
 import { Chat, Message } from './components/Chat'
 import WebSocketContext from './WebSocketContext'
 import './App.css'
@@ -12,8 +12,8 @@ const conn = new WebSocket(wsUrl, 'json');
 
 function App() {
   let [_, setUserId] = useState<string>('...loading...');
-  let [userList, setUserList] = useState<string[]>([]); // how to set type string[]?
-  let [messages, setMessages] = useState<Message[]>([]); // how to set type Message[]?
+  let [userList, setUserList] = useState<User[]>([]);
+  let [messages, setMessages] = useState<Message[]>([]);
   let connRef = useRef<WebSocket | null>(conn);
   let drawRef = useRef<DrawCallback>(new DrawCallback((_) => {
     console.error("draw callback called before initialization");
@@ -41,7 +41,9 @@ function App() {
           break;
         case 'ids':
           console.log(`Ids: ${data.ids}`);
-          setUserList(data.ids);
+          // TODO update this to use backend data when available
+          let users = data.ids.map((i: string) => new User(i, "", "", false));
+          setUserList(users);
           break;
         case 'chat':
           let d = data.data
