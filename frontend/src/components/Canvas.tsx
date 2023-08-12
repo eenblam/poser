@@ -21,6 +21,19 @@ enum MouseButtons {
 }
 */
 
+// We could try to be clever and use window.getComputedStyle(document.body).getPropertyValue('--player-1')
+// to ensure these don't go out of sync, but for now it's sufficient (and efficient) to just define twice:
+const playerColors: string[] = [
+    '#ff3232',
+    '#ff9232',
+    '#e7ff32',
+    '#32ff87',
+    '#32ffee',
+    '#3295ff',
+    '#c132ff',
+    '#ff326f',
+];
+
 // https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button
 enum MouseButton {
     Primary = 0,
@@ -36,6 +49,7 @@ class DrawData {
         public lastY: number,
         public x: number,
         public y: number,
+        public playerNumber: number,
     ) {}
 
     // Reset all coordinates to the same point.
@@ -56,13 +70,18 @@ class DrawData {
     }
 }
 
-function Canvas() {
+interface CanvasProps {
+    playerNumber: number;
+}
+
+function Canvas(props: CanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const ws = useContext(WebSocketContext);
     if (ws === null) {
         console.error("got a null websocket")
     }
     const drawCallback = useContext(DrawCallbackContext);
+
 
     useEffect(() => {
         if (canvasRef.current === null) { return; }
@@ -95,14 +114,14 @@ function Canvas() {
 
         let drawing = false;
         let first = true;
-        const drawData = new DrawData(0, 0, 0, 0);
+        const drawData = new DrawData(0, 0, 0, 0, props.playerNumber);
 
         function draw(d: DrawData) {
             ctx.beginPath();
             ctx.moveTo(d.lastX, d.lastY);
             ctx.lineTo(d.x, d.y);
 
-            ctx.strokeStyle = 'pink'; //TODO player color
+            ctx.strokeStyle = playerColors[d.playerNumber - 1]; // players 1-indexed, colors 0-indexed
             ctx.lineWidth = 5;
             ctx.lineCap = 'round';
             ctx.stroke();
@@ -152,7 +171,7 @@ function Canvas() {
             drawCallback.callback = (_: DrawData) => { console.error("draw callback called after cleanup"); };
         };
 
-    }, []);
+    }, [props.playerNumber]);
 
     return (
         <canvas ref={canvasRef}></canvas>

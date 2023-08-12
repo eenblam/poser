@@ -21,11 +21,17 @@ type ChatMessage struct {
 	User      string `json:"user"`
 }
 
+type ConnectionMessage struct {
+	ID           string `json:"id"`
+	PlayerNumber int    `json:"playerNumber"`
+}
+
 type DrawMessage struct {
-	LastX int `json:"lastX"`
-	LastY int `json:"lastY"`
-	X     int `json:"x"`
-	Y     int `json:"y"`
+	LastX        int `json:"lastX"`
+	LastY        int `json:"lastY"`
+	X            int `json:"x"`
+	Y            int `json:"y"`
+	PlayerNumber int `json:"playerNumber"`
 }
 
 type NotificationMessage struct {

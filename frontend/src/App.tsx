@@ -16,6 +16,8 @@ function App() {
   let [userList, setUserList] = useState<User[]>([]);
   let [messages, setMessages] = useState<Message[]>([]);
   let [notifications, setNotifications] = useState<Notification[]>([]);
+  let [playerNumber, setPlayerNumber] = useState<number>(0);
+
   let connRef = useRef<WebSocket | null>(conn);
   let drawRef = useRef<DrawCallback>(new DrawCallback((_) => {
     console.error("draw callback called before initialization");
@@ -40,7 +42,8 @@ function App() {
       const d = data.data; // may be undefined
       switch (data.type) {
         case 'connection':
-          setUserId(data.id);
+          setUserId(d.id);
+          setPlayerNumber(d.playerNumber);
           break;
         case 'ids':
           console.log(`Ids: ${data.ids}`);
@@ -88,7 +91,7 @@ function App() {
         <Notifications notifications={notifications}/>
         <UserList users={userList} />
         <Chat messages={messages} />
-        <Canvas/>
+        <Canvas playerNumber={playerNumber}/>
       </DrawCallbackContext.Provider>
       </WebSocketContext.Provider>
     </>

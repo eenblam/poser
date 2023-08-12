@@ -105,10 +105,10 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Send user their ID
-	data, err := json.Marshal(struct {
-		Type string `json:"type"`
-		ID   string `json:"id"`
-	}{Type: "connection", ID: conn.ID})
+	bs, err := MakeMessage("connection", &ConnectionMessage{
+		ID:           conn.ID,
+		PlayerNumber: conn.PlayerNumber,
+	})
 	if err != nil {
 		log.Printf("Error marshalling connection: %s", err)
 		conn.WriteControl(websocket.CloseMessage,
@@ -117,7 +117,7 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			time.Now().Add(500*time.Millisecond))
 		return
 	}
-	conn.WriteMessage(websocket.TextMessage, data)
+	conn.WriteMessage(websocket.TextMessage, bs)
 	// Send all IDs
 	room.BroadcastConnections()
 

@@ -15,7 +15,7 @@
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
-  /* poser vars */
+  /* poser vars. Update Canvas JS colors when updating these. */
   --player-1: #ff3232;
   --player-2: #ff9232;
   --player-3: #e7ff32;
