@@ -11,6 +11,19 @@ import (
 )
 
 var ErrRoomFull = errors.New("Room is full")
+var ErrGameInProgress = errors.New("Game is in progress")
+
+// Game states
+type Stage int
+
+const (
+	Waiting Stage = iota
+	GettingPrompt
+	Drawing
+	Voting
+	PoserGuessing
+	// ValidatingGuess?
+)
 
 type Room struct {
 	// This could also be a sync.Map,
@@ -24,6 +37,8 @@ type Room struct {
 	Size int
 	// Ordered mapping of position to player
 	Slots []*Connection
+	// Current state of room's game
+	Stage Stage
 }
 
 func NewRoom(id string, size int) *Room {
@@ -37,12 +52,16 @@ func NewRoom(id string, size int) *Room {
 		Conns: make(map[*Connection]bool),
 		Size:  size,
 		Slots: slots,
+		Stage: Waiting,
 	}
 }
 
 func (r *Room) Add(conn *Connection) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
+	if !r.IsJoinable() {
+		return ErrGameInProgress
+	}
 	if len(r.Conns) < r.Size {
 		// Find a slot for user
 		for i, slot := range r.Slots {
@@ -83,6 +102,8 @@ func (r *Room) Remove(conn *Connection) int {
 func (r *Room) String() string {
 	return r.ID
 }
+
+/* Room communication methods */
 
 func (r *Room) Broadcast(from *Connection, message []byte) {
 	r.mux.Lock()
@@ -138,4 +159,11 @@ func (r *Room) broadcastUnsafe(from *Connection, message []byte) {
 			conn.WriteMessage(websocket.TextMessage, message)
 		}
 	}
+}
+
+/* Game state methods */
+
+// IsJoinable checks if room can currently be joined by a user. Not thread-safe.
+func (r *Room) IsJoinable() bool {
+	return r.Stage == Waiting
 }
