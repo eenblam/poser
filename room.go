@@ -10,19 +10,28 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var ErrRoomFull = errors.New("Room is full")
-var ErrGameInProgress = errors.New("Game is in progress")
+var ErrRoomFull = errors.New("room is full")
+var ErrGameInProgress = errors.New("game is in progress")
 
 // Game states
-type Stage int
+type State string
 
 const (
-	Waiting Stage = iota
-	GettingPrompt
-	Drawing
-	Voting
-	PoserGuessing
+	Waiting       State = "Waiting"
+	GettingPrompt State = "GettingPrompt"
+	Drawing       State = "Drawing"
+	Voting        State = "Voting"
+	PoserGuessing State = "PoserGuessing"
 	// ValidatingGuess?
+)
+
+// Player roles
+type Role string
+
+const (
+	Artist Role = "Artist"
+	Muse   Role = "Muse"
+	Poser  Role = "Poser"
 )
 
 type Room struct {
@@ -38,7 +47,11 @@ type Room struct {
 	// Ordered mapping of position to player
 	Slots []*Connection
 	// Current state of room's game
-	Stage Stage
+	State State
+	// Muse for current game
+	Muse *Connection
+	// Fake Artist for current game
+	FakeArtist *Connection
 }
 
 func NewRoom(id string, size int) *Room {
@@ -52,7 +65,7 @@ func NewRoom(id string, size int) *Room {
 		Conns: make(map[*Connection]bool),
 		Size:  size,
 		Slots: slots,
-		Stage: Waiting,
+		State: Waiting,
 	}
 }
 
@@ -165,5 +178,84 @@ func (r *Room) broadcastUnsafe(from *Connection, message []byte) {
 
 // IsJoinable checks if room can currently be joined by a user. Not thread-safe.
 func (r *Room) IsJoinable() bool {
-	return r.Stage == Waiting
+	return r.State == Waiting
+}
+
+func (r *Room) Start() {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+	if r.State != Waiting { // Game already started
+		// Could just be multiple sends from client:
+		//   Client sends Start A
+		//   Start() locks for A
+		//   Client double clicked, sends Start() B. Waits for lock.
+		//   Start A completes, unlocks.
+		//   Start() B acquires lock. Sees state is not Waiting. Here we are!
+		// So don't fail here, but do log the error. This indicates an issue with client UI.
+		log.Println("error: Start() issued for in-progress game")
+		return
+	}
+	log.Printf("Starting game for room %s", r.ID)
+	r.State = GettingPrompt
+	museIndex, err := r.pickMuse()
+	if err != nil {
+		log.Printf("error picking prompter: %s", err)
+		r.abortGameUnsafe("Whoops! There was an error choosing a player to set the prompt.")
+		return
+	}
+	museConn := r.Slots[museIndex]
+	if museConn == nil { // big problem! we somehow picked a bad slot within a lock
+		log.Println("error picking prompter: somehow picked an empty slot")
+		r.abortGameUnsafe("Whoops! There was an error choosing a player to set the prompt.")
+		return
+	}
+	r.Muse = museConn
+	// Don't reveal the Muse to other players here!
+	// Doing so reduces the number of possible fake artists, which is less fun in small games.
+	r.notifyAllUnsafe("Game starting! The Muse is contemplating...", false)
+	r.broadcastStateUnsafe(nil)
+	// Send prompter role
+	bs, err := MakeMessage("role", &RoleMessage{Role: Muse})
+	if err != nil {
+		log.Printf("error marshalling start message: %s", err)
+		r.abortGameUnsafe("Whoops! There was an error starting the game.")
+		return
+	}
+	r.Muse.WriteMessage(websocket.TextMessage, bs)
+	r.Muse.Notify("You are the Muse! Pick a prompt for the round.", false)
+	//TODO handle fake artist similarly
+}
+
+// pickMuse selects one of the currently active clients to pick the prompt for the new round.
+func (r *Room) pickMuse() (int, error) {
+	//TODO randomly select someone, instead of just using owner
+	playerIndex := 0
+	return playerIndex, nil
+}
+
+// abortGameUnsafe resets game state, sends error to all clients, and updates state for UI.
+// Not threadsafe.
+func (r *Room) abortGameUnsafe(message string) {
+	r.State = Waiting
+	r.notifyAllUnsafe(message, true)
+	r.broadcastStateUnsafe(nil)
+}
+
+// notifyAllUnsafe sends a Notification to all clients.
+// Not threadsafe.
+func (r *Room) notifyAllUnsafe(message string, isErr bool) {
+	for conn := range r.Conns {
+		conn.Notify(message, isErr)
+	}
+}
+
+// broadcastStateUnsafe sends current game state to all clients.
+// Not threadsafe.
+func (r *Room) broadcastStateUnsafe(from *Connection) {
+	bs, err := MakeMessage("state", &StateMessage{State: r.State})
+	if err != nil {
+		log.Printf("failed to create StateMessage for broadcast")
+		return
+	}
+	r.broadcastUnsafe(nil, bs)
 }

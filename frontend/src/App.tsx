@@ -3,6 +3,8 @@ import { Canvas, DrawCallback, DrawCallbackContext } from './components/Canvas'
 import { Chat, Message } from './components/Chat'
 import { User, UserList} from './components/UserList'
 import { Notification, Notifications } from './components/Notifications'
+import { StartForm } from './components/StartForm'
+import { State, Role } from './enums';
 import WebSocketContext from './WebSocketContext'
 import './App.css'
 
@@ -17,6 +19,8 @@ function App() {
   let [messages, setMessages] = useState<Message[]>([]);
   let [notifications, setNotifications] = useState<Notification[]>([]);
   let [playerNumber, setPlayerNumber] = useState<number>(0);
+  let [gameState, setGameState] = useState<State>(State.Waiting);
+  let [__, setPlayerRole] = useState<Role>(Role.Artist);
 
   let connRef = useRef<WebSocket | null>(conn);
   let drawRef = useRef<DrawCallback>(new DrawCallback((_) => {
@@ -65,6 +69,12 @@ function App() {
           // We can do .sort((a,b) => a.timestamp-b.timestamp) if we want timestamp ordering, but for now order of arrival seems best.
           setNotifications((ns) => [...ns, n]);
           break;
+        case 'role':
+          setPlayerRole(d.role);
+          break;
+        case 'state':
+          setGameState(d.state);
+          break;
         case undefined:
           console.log("Undefined message type");
           console.log(e);
@@ -89,6 +99,7 @@ function App() {
       <WebSocketContext.Provider value={connRef.current}>
       <DrawCallbackContext.Provider value={drawRef.current}>
         <Notifications notifications={notifications}/>
+        <StartForm gameState={gameState} playerNumber={playerNumber} />
         <UserList users={userList} />
         <Chat messages={messages} />
         <Canvas playerNumber={playerNumber}/>

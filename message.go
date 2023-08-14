@@ -34,6 +34,14 @@ type DrawMessage struct {
 	PlayerNumber int `json:"playerNumber"`
 }
 
+type RoleMessage struct {
+	Role Role
+}
+
+type StateMessage struct {
+	State State
+}
+
 type NotificationMessage struct {
 	Timestamp time.Time `json:"timestamp"`
 	Message   string    `json:"message"`

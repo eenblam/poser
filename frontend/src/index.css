@@ -118,7 +118,7 @@ button:focus-visible {
 }
 
 .player-offline {
-  display: hidden;
+  display: none;
 }
 
 #chat-widget {
@@ -131,4 +131,8 @@ button:focus-visible {
 
 #userlist-widget>ul {
   list-style-type: none;
+}
+
+.inactive {
+  display: none;
 }

@@ -29,10 +29,20 @@ func (c *Connection) Notify(message string, isErr bool) {
 	bs, err := MakeMessage("notification", &NotificationMessage{
 		Timestamp: time.Now(),
 		Message:   message,
-		IsError:   true,
+		IsError:   isErr,
 	})
 	if err != nil {
 		log.Printf("failed to notify client: %s", err)
+		return
+	}
+	c.WriteMessage(websocket.TextMessage, bs)
+}
+
+func (c *Connection) SendState(state State) {
+	bs, err := MakeMessage("state", &StateMessage{State: state})
+	if err != nil {
+		log.Printf("failed to send state to client client: %s", err)
+		return
 	}
 	c.WriteMessage(websocket.TextMessage, bs)
 }
@@ -95,6 +105,13 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("New connection from %s", conn.RemoteAddr())
 	defer func() {
+		//TODO handle room owner leaving (assign new?)
+		//TODO handle prompt writer leaving (assign new prompt writer)
+		//TODO handle final voter leaving (register voting as complete)
+		//TODO handle fake artist leaving during game (make a note? or just end game?)
+		//     Could just check for this after voting. (State PoserGuessing
+		//     "You voted for X. Fake artist was Y, who left."
+		//TODO handle fake artist leaving during guess (end game)
 		log.Printf("Closing connection to %s", conn.RemoteAddr())
 		if room.Remove(conn) == 0 { // If everyone has now left, delete the room
 			log.Printf("Deleting room %s", room.ID)
@@ -170,6 +187,17 @@ LOOP:
 				log.Println(err)
 			}
 			continue LOOP
+		case "start":
+			// Nothing to parse from data
+			if conn.PlayerNumber != 1 {
+				conn.Notify(fmt.Sprintf("You cannot start the game as player #%d.", conn.PlayerNumber), true)
+				continue LOOP
+			}
+			if room.State != Waiting {
+				// Just ignore, player may have accidentally sent this
+				continue LOOP
+			}
+			go room.Start()
 		default:
 			//DEBUG Just broadcast messages to all other room members for now
 			log.Printf("%s:%s: unexpected message: %s", room.ID, conn.RemoteAddr(), message)
