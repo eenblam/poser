@@ -6,11 +6,16 @@ import (
 	"time"
 )
 
+// Message provides a wrapper struct for parsing and sending messages to the client.
+//
+// It's really a union type, but Go doesn't have those,
+// so we're using a struct with a type annotation and a raw JSON field.
 type Message struct {
 	Type string          `json:"type"`
 	Data json.RawMessage `json:"data"`
 }
 
+// ChatMessage ferries chat info between users.
 type ChatMessage struct {
 	ID           string `json:"id"`
 	PlayerNumber int    `json:"playerNumber"`
@@ -21,11 +26,19 @@ type ChatMessage struct {
 	User      string `json:"user"`
 }
 
+// ConnectionMessage is used to welcome a new user to the game,
+// providing the most basic info needed by the client: ID and player number.
+//
+// ID and number aren't equivalent, since player N could leave the room and
+// be replaced by someone else with a different ID.
 type ConnectionMessage struct {
 	ID           string `json:"id"`
 	PlayerNumber int    `json:"playerNumber"`
 }
 
+// DrawMessage simply forwards the coordinates of a draw event to the client.
+//
+// Draw events are broken up into single strokes of a larger vector.
 type DrawMessage struct {
 	LastX        int `json:"lastX"`
 	LastY        int `json:"lastY"`
@@ -34,20 +47,27 @@ type DrawMessage struct {
 	PlayerNumber int `json:"playerNumber"`
 }
 
+// RoleMessage notifies a client of its role in the game.
 type RoleMessage struct {
 	Role Role
 }
 
+// StateMessage notifies a client of the current state of the game.
 type StateMessage struct {
 	State State
 }
 
+// NotificationMessage is used to provide messages from the server to the client.
+//
+// These could potentially be consumed by chat instead of a separate notification widget;
+// that's up to the client to decide.
 type NotificationMessage struct {
 	Timestamp time.Time `json:"timestamp"`
 	Message   string    `json:"message"`
 	IsError   bool      `json:"isError"`
 }
 
+// ParseMessage unwraps a Message from the client, but doesn't try to parse the inner data.
 func ParseMessage(bs []byte) (messageType string, data []byte, err error) {
 	var message Message
 	err = json.Unmarshal(bs, &message)
@@ -57,6 +77,8 @@ func ParseMessage(bs []byte) (messageType string, data []byte, err error) {
 	return message.Type, message.Data, nil
 }
 
+// MakeMessage wraps a message in a Message struct, then marshals to JSON bytes
+// to be sent to the client. In theory, a message can be any type T.
 func MakeMessage[T any](messageType string, message T) ([]byte, error) {
 	rawJson, err := json.Marshal(message)
 	if err != nil {
