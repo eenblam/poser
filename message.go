@@ -47,6 +47,11 @@ type DrawMessage struct {
 	PlayerNumber int `json:"playerNumber"`
 }
 
+// PlayersMessage notifies a client of the current players in the game.
+type PlayersMessage struct {
+	IDs []string `json:"ids"`
+}
+
 // RoleMessage notifies a client of its role in the game.
 type RoleMessage struct {
 	Role Role

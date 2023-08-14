@@ -49,10 +49,10 @@ function App() {
           setUserId(d.id);
           setPlayerNumber(d.playerNumber);
           break;
-        case 'ids':
-          console.log(`Ids: ${data.ids}`);
+        case 'players':
+          console.log(`Ids: ${d.ids}`);
           // Note: playerNumber (idx) is 1-indexed, not 0
-          let users = data.ids.map((id: string, idx: number) => new User(id, idx+1, "", false))
+          let users = d.ids.map((id: string, idx: number) => new User(id, idx+1, "", false))
                               .filter((u: User) => u.id !== ""); // ignore empty slots
           setUserList(users);
           break;

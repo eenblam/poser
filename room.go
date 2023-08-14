@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -124,7 +123,7 @@ func (r *Room) Broadcast(from *Connection, message []byte) {
 	r.broadcastUnsafe(from, message)
 }
 
-// BroadcastT broadcasts a message of type T to all connections in the room.
+// BroadcastType broadcasts a message of type T to all connections in the room.
 // If from is non-nil, that connection will be omitted.
 // If the message is successfully marshalled to JSON, it will be sent in a separate goroutine.
 //
@@ -138,6 +137,7 @@ func BroadcastType[T any](room *Room, from *Connection, messageType string, mess
 	return nil
 }
 
+// BroadcastConnections informs all clients in the room of the current list of players.
 func (r *Room) BroadcastConnections() {
 	r.mux.Lock()
 	defer r.mux.Unlock()
@@ -153,10 +153,7 @@ func (r *Room) BroadcastConnections() {
 		}
 	}
 	// Create JSON
-	bs, err := json.Marshal(struct {
-		Type string   `json:"type"`
-		IDs  []string `json:"ids"`
-	}{Type: "ids", IDs: ids})
+	bs, err := MakeMessage[PlayersMessage]("players", PlayersMessage{IDs: ids})
 	if err != nil {
 		log.Printf("Error marshalling connections: %s", err)
 		return
