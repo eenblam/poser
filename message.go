@@ -54,12 +54,12 @@ type PlayersMessage struct {
 
 // RoleMessage notifies a client of its role in the game.
 type RoleMessage struct {
-	Role Role
+	Role Role `json:"role"`
 }
 
 // StateMessage notifies a client of the current state of the game.
 type StateMessage struct {
-	State State
+	State State `json:"state"`
 }
 
 // NotificationMessage is used to provide messages from the server to the client.
