@@ -9,7 +9,6 @@ interface StartFormProps {
 
 function StartForm(props: StartFormProps) {
     const ws = useContext(WebSocketContext);
-    //TODO playerRole is more for the prompt! We want playerNumber/ownership here! See Canvas.
     const formActive = props.gameState === State.Waiting && props.playerNumber === 1;
     const className = formActive ? "" : "inactive";
 
