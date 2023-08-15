@@ -52,6 +52,11 @@ type PlayersMessage struct {
 	IDs []string `json:"ids"`
 }
 
+// PromptMessage, sent by the Muse to the server, contains the Muse's prompt.
+type PromptMessage struct {
+	Prompt string `json:"prompt"`
+}
+
 // RoleMessage notifies a client of its role in the game.
 type RoleMessage struct {
 	Role Role `json:"role"`

@@ -4,6 +4,7 @@ import { Chat, Message } from './components/Chat'
 import { User, UserList} from './components/UserList'
 import { Notification, Notifications } from './components/Notifications'
 import { StartForm } from './components/StartForm'
+import { PromptForm } from './components/PromptForm'
 import { State, Role } from './enums';
 import WebSocketContext from './WebSocketContext'
 import './App.css'
@@ -20,7 +21,7 @@ function App() {
   let [notifications, setNotifications] = useState<Notification[]>([]);
   let [playerNumber, setPlayerNumber] = useState<number>(0);
   let [gameState, setGameState] = useState<State>(State.Waiting);
-  let [__, setPlayerRole] = useState<Role>(Role.Artist);
+  let [playerRole, setPlayerRole] = useState<Role>(Role.Artist);
 
   let connRef = useRef<WebSocket | null>(conn);
   let drawRef = useRef<DrawCallback>(new DrawCallback((_) => {
@@ -73,6 +74,7 @@ function App() {
           setPlayerRole(d.role);
           break;
         case 'state':
+          console.log(d.state);
           setGameState(d.state);
           break;
         case undefined:
@@ -100,6 +102,7 @@ function App() {
       <DrawCallbackContext.Provider value={drawRef.current}>
         <Notifications notifications={notifications}/>
         <StartForm gameState={gameState} playerNumber={playerNumber} />
+        <PromptForm gameState={gameState} playerRole={playerRole} />
         <UserList users={userList} />
         <Chat messages={messages} />
         <Canvas playerNumber={playerNumber}/>

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -50,7 +51,11 @@ type Room struct {
 	// Muse for current game
 	Muse *Connection
 	// Fake Artist for current game
-	FakeArtist *Connection
+	Poser *Connection
+	// PlayerNumber for first player
+	FirstPlayerNumber int
+	// Prompt for the game
+	Prompt string
 }
 
 func NewRoom(id string, size int) *Room {
@@ -178,6 +183,42 @@ func (r *Room) IsJoinable() bool {
 	return r.State == Waiting
 }
 
+func (r *Room) SetPrompt(prompt string) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	r.Prompt = prompt
+
+	var err error
+	// Pick Poser
+	r.Poser, err = r.pickPoser()
+	if err != nil {
+		log.Printf("error picking poser: %s", err)
+		r.abortGameUnsafe("Couldn't pick poser. Not enough players.")
+		return
+	}
+	// Notify everyone but Poser of prompt
+	r.Poser.Notify(
+		"You are the poser! Just act cool, play along, and try to guess what you're drawing.",
+		false,
+	)
+	for c := range r.Conns {
+		if c != r.Poser {
+			c.Notify(fmt.Sprintf("The prompt is: %s", prompt), false)
+		}
+	}
+	// Pick first player
+	r.FirstPlayerNumber, err = r.pickFirstPlayer()
+	if err != nil {
+		log.Printf("error picking first player: %s", err)
+		r.abortGameUnsafe("Couldn't pick first player. Not enough players.")
+		return
+	}
+	// Update state
+	r.State = Drawing
+	r.broadcastStateUnsafe()
+}
+
 func (r *Room) Start() {
 	r.mux.Lock()
 	defer r.mux.Unlock()
@@ -210,7 +251,7 @@ func (r *Room) Start() {
 	// Don't reveal the Muse to other players here!
 	// Doing so reduces the number of possible fake artists, which is less fun in small games.
 	r.notifyAllUnsafe("Game starting! The Muse is contemplating...", false)
-	r.broadcastStateUnsafe(nil)
+	r.broadcastStateUnsafe()
 	// Send prompter role
 	bs, err := MakeMessage("role", &RoleMessage{Role: Muse})
 	if err != nil {
@@ -224,10 +265,54 @@ func (r *Room) Start() {
 }
 
 // pickMuse selects one of the currently active clients to pick the prompt for the new round.
+//
+// Not threadsafe.
 func (r *Room) pickMuse() (int, error) {
 	//TODO randomly select someone, instead of just using owner
 	playerIndex := 0
 	return playerIndex, nil
+}
+
+// pickFirstPlayer selects an active clients to play first.
+//
+// Not threadsafe. Errors on empty list.
+func (r *Room) pickFirstPlayer() (int, error) {
+	if len(r.Conns) < 1 {
+		return 0, errors.New("no players")
+	}
+	// We could try to be clever here and not allocate,
+	// but this is only once per game. Not a hot path.
+	// Grab indices (player numbers) of non-nil slots
+	choices := make([]int, len(r.Conns))
+	for i, conn := range r.Slots {
+		if conn != nil {
+			choices = append(choices, i)
+		}
+	}
+	choiceIndex := rand.Intn(len(choices))
+	return choices[choiceIndex], nil
+}
+
+// pickPoser selects an active clients to be the Poser. Doesn't pick the Muse.
+//
+// Not threadsafe.
+// Errors if no one can be the Poser.
+func (r *Room) pickPoser() (*Connection, error) {
+	// We could try to be clever here and not allocate,
+	// but this is only once per game. Not a hot path.
+	nChoices := len(r.Conns) - 1
+	if nChoices < 1 {
+		// At least one player must be Muse, so this means no one can be the Poser.
+		return nil, errors.New("no one available to to play the Poser")
+	}
+	choices := make([]*Connection, 0, nChoices)
+	for conn := range r.Conns {
+		if conn != r.Muse && conn != nil {
+			choices = append(choices, conn)
+		}
+	}
+	poserIndex := rand.Intn(nChoices)
+	return choices[poserIndex], nil
 }
 
 // abortGameUnsafe resets game state, sends error to all clients, and updates state for UI.
@@ -235,7 +320,7 @@ func (r *Room) pickMuse() (int, error) {
 func (r *Room) abortGameUnsafe(message string) {
 	r.State = Waiting
 	r.notifyAllUnsafe(message, true)
-	r.broadcastStateUnsafe(nil)
+	r.broadcastStateUnsafe()
 }
 
 // notifyAllUnsafe sends a Notification to all clients.
@@ -248,7 +333,7 @@ func (r *Room) notifyAllUnsafe(message string, isErr bool) {
 
 // broadcastStateUnsafe sends current game state to all clients.
 // Not threadsafe.
-func (r *Room) broadcastStateUnsafe(from *Connection) {
+func (r *Room) broadcastStateUnsafe() {
 	bs, err := MakeMessage("state", &StateMessage{State: r.State})
 	if err != nil {
 		log.Printf("failed to create StateMessage for broadcast")

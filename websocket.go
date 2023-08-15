@@ -187,6 +187,17 @@ LOOP:
 				log.Println(err)
 			}
 			continue LOOP
+		case "prompt":
+			if conn != room.Muse {
+				conn.Notify("Server received prompt from your client, but you are not the Muse.", true)
+				continue LOOP
+			}
+			m := &PromptMessage{}
+			if err := json.Unmarshal(data, m); err != nil {
+				log.Printf("Error unmarshalling prompt message: %s", err)
+				continue LOOP
+			}
+			go room.SetPrompt(m.Prompt)
 		case "start":
 			// Nothing to parse from data
 			if conn.PlayerNumber != 1 {
