@@ -188,7 +188,7 @@ LOOP:
 			}
 			continue LOOP
 		case "prompt":
-			if conn != room.Muse {
+			if conn.PlayerNumber-1 != room.Game.Muse {
 				conn.Notify("Server received prompt from your client, but you are not the Muse.", true)
 				continue LOOP
 			}
@@ -204,10 +204,11 @@ LOOP:
 				conn.Notify(fmt.Sprintf("You cannot start the game as player #%d.", conn.PlayerNumber), true)
 				continue LOOP
 			}
-			if room.State != Waiting {
+			if room.Game.State != Waiting {
 				// Just ignore, player may have accidentally sent this
 				continue LOOP
 			}
+			//TODO maybe just return an error here?
 			go room.Start()
 		default:
 			//DEBUG Just broadcast messages to all other room members for now
