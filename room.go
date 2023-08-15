@@ -162,31 +162,6 @@ func (r *Room) broadcastUnsafe(from *Connection, message []byte) {
 
 /* Game state methods */
 
-func (r *Room) SetPrompt(prompt string) {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-
-	err := r.Game.SetPrompt(prompt)
-	if err != nil {
-		log.Printf("error setting prompt: %s", err)
-		r.abortGameUnsafe(fmt.Sprintf("Couldn't set prompt: %s", err))
-		return
-	}
-	r.broadcastStateUnsafe()
-
-	// Notify everyone but Poser of prompt
-	poser := r.Slots[r.Game.Poser]
-	poser.Notify(
-		"You are the poser! Just act cool, play along, and try to guess what you're drawing.",
-		false,
-	)
-	for c := range r.Conns {
-		if c != poser {
-			c.Notify(fmt.Sprintf("The prompt is: %s", prompt), false)
-		}
-	}
-}
-
 func (r *Room) Start() {
 	r.mux.Lock()
 	defer r.mux.Unlock()
@@ -224,6 +199,54 @@ func (r *Room) Start() {
 	if err != nil {
 		log.Printf("error sending role message: %s", err)
 		r.abortGameUnsafe("Whoops! There was an error starting the game.")
+		return
+	}
+}
+
+func (r *Room) SetPrompt(prompt string) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	err := r.Game.SetPrompt(prompt)
+	if err != nil {
+		log.Printf("error setting prompt: %s", err)
+		r.abortGameUnsafe(fmt.Sprintf("Couldn't set prompt: %s", err))
+		return
+	}
+	r.broadcastStateUnsafe()
+
+	// Notify everyone but Poser of prompt
+	poser := r.Slots[r.Game.Poser]
+	poser.Notify(
+		"You are the poser! Just act cool, play along, and try to guess what you're drawing.",
+		false,
+	)
+	for c := range r.Conns {
+		if c != poser {
+			c.Notify(fmt.Sprintf("The prompt is: %s", prompt), false)
+		}
+	}
+	r.publishPlayerTurn(r.Game.Drawing + 1)
+}
+
+func (r *Room) EndTurn(player int) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	err := r.Game.EndTurn(player)
+	if err != nil {
+		log.Printf("error ending turn: %s", err)
+		r.abortGameUnsafe(fmt.Sprintf("Couldn't end turn: %s", err))
+		return
+	}
+	r.broadcastStateUnsafe()
+	if r.Game.State == Drawing {
+		r.publishPlayerTurn(r.Game.Drawing + 1)
+	} else if r.Game.State == Voting {
+		//TODO prompt players to vote
+		r.notifyAllUnsafe("Voting time! Vote for your favorite drawing.", false)
+		//TODO remove this
+		r.notifyAllUnsafe("(Voting is not yet implemented!)", true)
 		return
 	}
 }
@@ -268,4 +291,22 @@ func (r *Room) broadcastStateUnsafe() {
 		return
 	}
 	r.broadcastUnsafe(nil, bs)
+}
+
+// publishPlayerTurn sends a TurnMessage (with number of current player) to all clients.
+//
+// Currently, it also broadcasts handles a notification to all clients to alert the user.
+// This could probably be replaced in favor of a dedicated UI element for showing current turn.
+func (r *Room) publishPlayerTurn(playerNumber int) {
+	// Publish turn
+	bs, err := MakeMessage[TurnMessage]("turn", TurnMessage{PlayerNumber: playerNumber})
+	if err != nil {
+		log.Printf("error marshalling turn message: %s", err)
+		r.abortGameUnsafe("Whoops! There was an error starting the game.")
+		return
+	}
+	for c := range r.Conns {
+		c.WriteMessage(websocket.TextMessage, bs)
+	}
+	r.notifyAllUnsafe(fmt.Sprintf("It's Player #%d's turn to draw!", playerNumber), false)
 }

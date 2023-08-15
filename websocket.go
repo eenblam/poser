@@ -174,6 +174,12 @@ LOOP:
 				log.Println(err)
 			}
 			continue LOOP
+		case "done": // User finished their turn
+			if conn.PlayerNumber-1 != room.Game.Drawing {
+				conn.Notify("Server received done from your client, but it is not your turn.", true)
+				continue LOOP
+			}
+			go room.EndTurn(conn.PlayerNumber - 1)
 		case "draw":
 			m := &DrawMessage{}
 			err := json.Unmarshal(data, m)

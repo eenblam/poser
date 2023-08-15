@@ -47,6 +47,11 @@ type DrawMessage struct {
 	PlayerNumber int `json:"playerNumber"`
 }
 
+// TurnMessage indicates which client is currently drawing.
+type TurnMessage struct {
+	PlayerNumber int `json:"playerNumber"`
+}
+
 // PlayersMessage notifies a client of the current players in the game.
 type PlayersMessage struct {
 	IDs []string `json:"ids"`

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef } from 'react';
 import WebSocketContext from '../WebSocketContext';
+import { State } from '../enums.tsx'
 
 
 class DrawCallback {
@@ -71,6 +72,8 @@ class DrawData {
 }
 
 interface CanvasProps {
+    currentPlayer: number;
+    gameState: State;
     playerNumber: number;
 }
 
@@ -82,6 +85,9 @@ function Canvas(props: CanvasProps) {
     }
     const drawCallback = useContext(DrawCallbackContext);
 
+    const freeDraw = (props.gameState === State.Waiting);
+    const playerTurn = (props.gameState === State.Drawing) && (props.playerNumber === props.currentPlayer);
+    let canDraw = freeDraw || playerTurn;
 
     useEffect(() => {
         if (canvasRef.current === null) { return; }
@@ -110,7 +116,11 @@ function Canvas(props: CanvasProps) {
         */
         //canvas.width = window.innerWidth;
         //canvas.height = window.innerHeight;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Clear canvas when room is created and when each game starts.
+        if (props.gameState === State.Waiting || props.gameState === State.GettingPrompt) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
 
         let drawing = false;
         let first = true;
@@ -130,6 +140,7 @@ function Canvas(props: CanvasProps) {
         drawCallback.callback = draw;
 
         function move(e: MouseEvent) {
+            if (!canDraw) { return; }
             if (drawing) {
                 if (first) {
                     drawData.reset(e.offsetX, e.offsetY);
@@ -150,6 +161,7 @@ function Canvas(props: CanvasProps) {
         canvas.onmousemove = move;
         canvas.onmousedown = (e: MouseEvent) => {
             if (e.button != MouseButton.Primary) { return; }
+            if (!canDraw) { return; }
             drawData.reset(e.offsetX, e.offsetY);
             first = true;
             drawing = true;
@@ -157,6 +169,25 @@ function Canvas(props: CanvasProps) {
         }
         canvas.onmouseup = (e: MouseEvent) => {
             if (e.button != MouseButton.Primary) { return; }
+            if (!canDraw) { return; }
+            // End turn if ending a stroke on current turn (NOT during Waiting)
+            if (drawing && playerTurn) {
+                // Note that this condition is important for protecting canDraw
+                // in case drawing=false, canDraw=true, user clicks outside canvas,
+                // then releases mouse inside canvas! This would waste the player's turn.
+
+                // Prevent further drawing
+                canDraw = false;
+                // Notify server we're done.
+                if (ws != null) {
+                    ws.send(JSON.stringify({
+                        type: 'done',
+                        data: null,
+                    }));
+                } else {
+                    console.error("cannot end turn: no WebSocket")
+                }
+            }
             first = true;
             drawing = false;
         }
@@ -171,7 +202,7 @@ function Canvas(props: CanvasProps) {
             drawCallback.callback = (_: DrawData) => { console.error("draw callback called after cleanup"); };
         };
 
-    }, [props.playerNumber]);
+    }, [props.playerNumber, props.gameState, props.currentPlayer, playerTurn, canDraw]);
 
     return (
         <canvas ref={canvasRef}></canvas>

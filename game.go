@@ -3,10 +3,22 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 )
 
 var ErrInvalidState = errors.New("invalid game state")
+
+// This can be made a room config variable later
+const maxRounds = 2
+
+// Player states
+type PlayerState struct {
+	// Turns taken by player so far
+	TurnsTaken int
+	// Index of player's number in Game.Players
+	Index int
+}
 
 // Game states
 type State string
@@ -22,9 +34,14 @@ const (
 
 // Player roles
 type Game struct {
+	// Current State of the game (Waiting, GettingPrompt, Drawing, Voting, PoserGuessing)
 	State State
 	// Array of player numbers
 	Players []int
+	// Map of playerNumber -> PlayerState
+	PlayerStates map[int]*PlayerState
+	// Current round
+	Round int
 	// Index of Muse
 	Muse int
 	// Index of Poser
@@ -39,9 +56,11 @@ type Game struct {
 func (g *Game) Abort() {
 	g.State = Waiting
 	g.Players = nil
+	g.PlayerStates = nil
 	g.Muse = 0
 	g.Poser = 0
 	g.Drawing = 0
+	g.Round = 0
 }
 
 // IsJoinable checks if game can currently be joined by a user.
@@ -61,6 +80,14 @@ func (g *Game) Start(players []int) error {
 
 	g.Players = make([]int, len(players))
 	copy(g.Players, players)
+
+	g.PlayerStates = make(map[int]*PlayerState)
+	for i, p := range players {
+		g.PlayerStates[p] = &PlayerState{
+			TurnsTaken: 0,
+			Index:      i,
+		}
+	}
 
 	// Make a separate copy we can mangle
 	choices := make([]int, len(players))
@@ -87,5 +114,34 @@ func (g *Game) SetPrompt(prompt string) error {
 
 	g.Prompt = prompt
 	g.State = Drawing
+	return nil
+}
+
+func (g *Game) EndTurn(player int) error {
+	if g.State != Drawing {
+		return ErrInvalidState
+	}
+
+	if player != g.Drawing {
+		return fmt.Errorf("player %d is not drawing", player)
+	}
+
+	// Increment turn count for player
+	g.PlayerStates[player].TurnsTaken++
+
+	// Find next player
+	nextIndex := (g.PlayerStates[player].Index + 1) % len(g.Players)
+	nextPlayer, ok := g.PlayerStates[g.Players[nextIndex]]
+	if !ok {
+		log.Println("index of next player not found in PlayerStates")
+		return fmt.Errorf("player #%d is next, but not found in PlayerStates", g.Players[nextIndex])
+	}
+	if nextPlayer.TurnsTaken == maxRounds {
+		// We've wrapped back around, everyone has played.
+		g.State = Voting
+		return nil
+	}
+	// Otherwise, advance to next player
+	g.Drawing = g.Players[nextIndex]
 	return nil
 }

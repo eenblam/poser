@@ -22,6 +22,7 @@ function App() {
   let [playerNumber, setPlayerNumber] = useState<number>(0);
   let [gameState, setGameState] = useState<State>(State.Waiting);
   let [playerRole, setPlayerRole] = useState<Role>(Role.Artist);
+  let [currentPlayer, setCurrentPlayer] = useState<number>(0);
 
   let connRef = useRef<WebSocket | null>(conn);
   let drawRef = useRef<DrawCallback>(new DrawCallback((_) => {
@@ -74,8 +75,12 @@ function App() {
           setPlayerRole(d.role);
           break;
         case 'state':
-          console.log(d.state);
+          console.log(`State: ${d.state}`);
           setGameState(d.state);
+          break;
+        case 'turn':
+          console.log(`Current player: ${d.playerNumber}`);
+          setCurrentPlayer(d.playerNumber);
           break;
         case undefined:
           console.log("Undefined message type");
@@ -105,7 +110,7 @@ function App() {
         <PromptForm gameState={gameState} playerRole={playerRole} />
         <UserList users={userList} />
         <Chat messages={messages} />
-        <Canvas playerNumber={playerNumber}/>
+        <Canvas gameState={gameState} playerNumber={playerNumber} currentPlayer={currentPlayer}/>
       </DrawCallbackContext.Provider>
       </WebSocketContext.Provider>
     </>
