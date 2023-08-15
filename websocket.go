@@ -134,7 +134,11 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			time.Now().Add(500*time.Millisecond))
 		return
 	}
-	conn.WriteMessage(websocket.TextMessage, bs)
+	err = conn.WriteMessage(websocket.TextMessage, bs)
+	if err != nil {
+		log.Printf("Failed to send user ID: %s", err)
+		return
+	}
 	// Send all IDs
 	room.BroadcastConnections()
 
