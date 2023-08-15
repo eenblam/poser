@@ -17,11 +17,12 @@ func MustRead(file string) string {
 	return string(b)
 }
 
-var roomHTML = MustRead("./frontend/dist/index.html")
+var indexHTML = MustRead("./frontend/dist/home.html")
+var roomHTML = MustRead("./frontend/dist/app.html")
 
 // The home page serves a page with a button to create a new room
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("<h1>Poser</h1><form action=\"/\" method=\"POST\"><input type=\"submit\" value=\"New Room\"></form>"))
+	w.Write([]byte(indexHTML))
 }
 
 // NewRoomHandler just creates a UUID for a new room, then redirects the user.
@@ -40,19 +41,4 @@ func NewRoomHandler(w http.ResponseWriter, r *http.Request) {
 // RoomHandler serves the room assets
 func RoomHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(roomHTML))
-}
-
-// NameHandler allows a user to set their name via the API
-func NameHandler() {
-	// POST
-	// Get name from JSON data
-	// Add name,room to cookie
-	// Reply with user data
-}
-
-func RoomUsersAPIHandler() {
-	// GET
-	// Get room ID from cookie
-	// Get room users from DB
-	// Reply with room data
 }
