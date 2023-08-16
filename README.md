@@ -5,6 +5,20 @@ It's still a work in progress, more to come!
 
 Right now it's just a simple Go app on the backend, with TypeScript and React on the frontend.
 
+## Running locally
+You can do the following to get a test environment running:
+
+```bash
+git clone https://github.com/eenblam/poser
+cd poser
+make dependencies
+make dev # build frontend, then run backend
+```
+
+The app will be available at http://localhost:8080.
+However, Chrome doesn't allow insecure websockets (even on localhost,)
+so you'll have a much better time with Firefox.
+
 ## State of implementation
 Current roadmap:
 

@@ -1,9 +1,12 @@
 #dirs=./ ./views ./models
 dirs=./
 
-.PHONY: atomic backend cover dev frontend fmt heat test testv
+.PHONY: atomic backend cover dependencies dev frontend fmt heat test testv
 
 all: frontend backend
+
+dependencies:
+	cd frontend && npm install
 
 # Rebuild front-end, then run app
 dev: frontend
