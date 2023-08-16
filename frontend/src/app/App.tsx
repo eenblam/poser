@@ -9,6 +9,7 @@ import { State, Role } from './enums';
 import WebSocketContext from './WebSocketContext'
 import './App.css'
 
+// Translate http(s)://HOST/room/ID/ to ws(s)://HOST/ws/ID/
 const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
 const wsUrl = `${wsProtocol}//${location.host}${location.pathname.replace('/room/', '/ws/')}`;
 
@@ -30,15 +31,8 @@ function App() {
   }));
 
   useEffect(() => {
-    // Translate http(s)://HOST/room/ID/ to ws(s)://HOST/ws/ID/
-    /*
-    let wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    let wsUrl = `${wsProtocol}//${location.host}${location.pathname.replace('/room/', '/ws/')}`;
-
-    let conn = new WebSocket(wsUrl, 'json');
-    */
     conn.onopen = (e) => {
-      console.log(`wsConnection open to 127.0.0.1:8080`, e);
+      console.log(`wsConnection open to ${wsUrl}`, e);
     };
     conn.onerror = (e) => {
       console.error(`wsConnection error `, e);
