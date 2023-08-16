@@ -78,6 +78,11 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	room := s.GetOrCreateRoom(roomId)
 
+	if !websocket.IsWebSocketUpgrade(r) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	wsConn, err := upgrader.Upgrade(w, r, nil)
 	conn := &Connection{
 		Conn: wsConn,
