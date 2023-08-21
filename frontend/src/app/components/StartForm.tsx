@@ -28,7 +28,7 @@ function StartForm(props: StartFormProps) {
       <div id="start-form-component" className={className}>
         <form id="start-form" onSubmit={handleSubmit}>
             <fieldset disabled={!formActive}>
-                <input type="submit" value="Start"></input>
+                <input id="start-form-submit" type="submit" value="Start"></input>
             </fieldset>
         </form>
       </div>
