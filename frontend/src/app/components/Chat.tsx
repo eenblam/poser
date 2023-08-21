@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useContext, useState } from 'react';
+import { ChangeEvent, FormEvent, useContext, useEffect, useRef, useState } from 'react';
 import WebSocketContext from '../WebSocketContext';
 
 interface ChatProps {
@@ -12,12 +12,23 @@ function Chat(props: ChatProps) {
         return (<p key={m.id} className={className}><ChatItem message={m} /></p>);
     }
     );
+    const messagesEltRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (messagesEltRef.current === null) { return; }
+        messagesEltRef.current.scroll(0,1);
+    }, []);
 
     return (
         <div id="chat-widget">
             <h2>Chat</h2>
-            <div>{chatMessages}</div>
-            <ChatInput />
+            <div id="chat-content">
+                <div id="chat-messages" ref={messagesEltRef}>
+                    {chatMessages}
+                    <div id="chat-bottom-anchor"></div>
+                </div>
+                <ChatInput />
+            </div>
         </div>
     );
 }
