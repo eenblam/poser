@@ -14,6 +14,11 @@
   --player-8: #ff326f;
 }
 
+body, #root {
+  height: 100%;
+  width: 100%;
+}
+
 .card {
   padding: 2em;
 }
