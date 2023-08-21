@@ -1,0 +1,42 @@
+.chat-input-form {
+  bottom: 0px;
+  height: 10%;
+  position: absolute;
+  transform: translateY(-100%);
+}
+
+.chat-input-form > button {
+  height: 100%;
+}
+
+#chat-content {
+  height: 200px;
+  /* Limit scope of absolute child positions (specifically, allow chat input to stay at bottom) */
+  position: relative;
+}
+
+#chat-messages {
+  height: 90%;
+  overflow: auto;
+}
+
+/* every message should be unanchored */
+#chat-messages * {
+  overflow-anchor: none;
+}
+
+/* exception: invisible bottom anchor should be anchored */
+#chat-bottom-anchor {
+  overflow-anchor: auto;
+  /* Must have *some* height */
+  height: 1px;
+}
+
+#chat-widget {
+  text-align: left;
+}
+
+#chat-widget > form > button {
+  /* Don't overflow from container */
+  height: 100%;
+}

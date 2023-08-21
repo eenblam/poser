@@ -1,3 +1,5 @@
+import './PlayerList.css';
+
 interface PlayerListProps {
   players: Player[];
 }

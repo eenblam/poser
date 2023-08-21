@@ -1,0 +1,7 @@
+#playerlist-widget {
+  text-align: left;
+}
+
+#playerlist-widget>ul {
+  list-style-type: none;
+}

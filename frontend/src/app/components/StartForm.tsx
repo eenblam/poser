@@ -1,6 +1,7 @@
 import { FormEvent, useContext } from 'react';
 import WebSocketContext from '../WebSocketContext';
 import { State } from '../enums';
+import './StartForm.css'
 
 interface StartFormProps {
     gameState: State,

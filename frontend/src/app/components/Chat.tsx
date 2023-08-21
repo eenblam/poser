@@ -1,5 +1,7 @@
 import { ChangeEvent, FormEvent, useContext, useEffect, useRef, useState } from 'react';
+
 import WebSocketContext from '../WebSocketContext';
+import './Chat.css'
 
 interface ChatProps {
     messages: Message[];
