@@ -48,8 +48,8 @@ func (c *Connection) SendState(state State) {
 }
 
 var upgrader = websocket.Upgrader{
-	//DEBUG currently accepting all requests
-	CheckOrigin:  func(r *http.Request) bool { return true },
+	// CheckOrigin: nil - require Origin to be the same as Host in request *if* Origin is present.
+	CheckOrigin:  nil,
 	Subprotocols: []string{"json"},
 }
 
