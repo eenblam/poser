@@ -13,7 +13,7 @@ import './App.css'
 const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
 const wsUrl = `${wsProtocol}//${location.host}${location.pathname.replace('/room/', '/ws/')}`;
 
-const conn = new WebSocket(wsUrl);
+const conn = new WebSocket(wsUrl, "json");
 
 function App() {
   let [_, setUserId] = useState<string>('...loading...');

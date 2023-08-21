@@ -49,7 +49,8 @@ func (c *Connection) SendState(state State) {
 
 var upgrader = websocket.Upgrader{
 	//DEBUG currently accepting all requests
-	CheckOrigin: func(r *http.Request) bool { return true },
+	CheckOrigin:  func(r *http.Request) bool { return true },
+	Subprotocols: []string{"json"},
 }
 
 type Server struct {
@@ -69,6 +70,21 @@ func (s *Server) GetOrCreateRoom(roomId string) *Room {
 	return room.(*Room)
 }
 
+func ValidateWebSocketRequest(r *http.Request) bool {
+	// Ensure actual upgrade
+	if !websocket.IsWebSocketUpgrade(r) {
+		return false
+	}
+	// Ensure correct protocol requested
+	subprotocols := websocket.Subprotocols(r)
+	for _, subprotocol := range subprotocols {
+		if subprotocol == "json" {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	roomId, ok := mux.Vars(r)["room"]
 	if !ok {
@@ -78,7 +94,7 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	room := s.GetOrCreateRoom(roomId)
 
-	if !websocket.IsWebSocketUpgrade(r) {
+	if !ValidateWebSocketRequest(r) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
