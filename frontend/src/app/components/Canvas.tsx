@@ -79,6 +79,7 @@ interface CanvasProps {
 
 function Canvas(props: CanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const canvasWrapperRef = useRef<HTMLDivElement>(null);
     const ws = useContext(WebSocketContext);
     if (ws === null) {
         console.error("got a null websocket")
@@ -91,7 +92,11 @@ function Canvas(props: CanvasProps) {
 
     useEffect(() => {
         if (canvasRef.current === null) { return; }
+        if (canvasWrapperRef.current === null) { return; }
         const canvas = canvasRef.current;
+        const canvasWrapper = canvasWrapperRef.current;
+        canvas.width = canvasWrapper.clientWidth;
+        canvas.height = canvasWrapper.clientHeight;
 
         const context = canvas.getContext('2d');
         if (context === null) { return; }
@@ -205,7 +210,9 @@ function Canvas(props: CanvasProps) {
     }, [props.playerNumber, props.gameState, props.currentPlayer, playerTurn, canDraw]);
 
     return (
-        <canvas ref={canvasRef}></canvas>
+        <div id="canvas-wrapper" ref={canvasWrapperRef}>
+            <canvas ref={canvasRef}></canvas>
+        </div>
     )
 }
 
