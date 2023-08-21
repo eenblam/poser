@@ -14,16 +14,6 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
-
-  /* poser vars. Update Canvas JS colors when updating these. */
-  --player-1: #ff3232;
-  --player-2: #ff9232;
-  --player-3: #e7ff32;
-  --player-4: #32ff87;
-  --player-5: #32ffee;
-  --player-6: #3295ff;
-  --player-7: #c132ff;
-  --player-8: #ff326f;
 }
 
 a {
