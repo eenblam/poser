@@ -12,3 +12,60 @@
 .read-the-docs {
   color: #888;
 }
+
+.notification-error {
+  color: var(--background-color);
+  background-color: rgba(255, 252, 80, 0.87);
+}
+
+.player-1 {
+  color: var(--player-1);
+}
+
+.player-2 {
+  color: var(--player-2);
+}
+
+.player-3 {
+  color: var(--player-3);
+}
+
+.player-4 {
+  color: var(--player-4);
+}
+
+.player-5 {
+  color: var(--player-5);
+}
+
+.player-6 {
+  color: var(--player-6);
+}
+
+.player-7 {
+  color: var(--player-7);
+}
+
+.player-8 {
+  color: var(--player-8);
+}
+
+.player-offline {
+  display: none;
+}
+
+#chat-widget {
+  text-align: left;
+}
+
+#userlist-widget {
+  text-align: left;
+}
+
+#userlist-widget>ul {
+  list-style-type: none;
+}
+
+.inactive {
+  display: none;
+}
