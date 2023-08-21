@@ -97,11 +97,11 @@
   height: 100%;
 }
 
-#userlist-widget {
+#playerlist-widget {
   text-align: left;
 }
 
-#userlist-widget>ul {
+#playerlist-widget>ul {
   list-style-type: none;
 }
 

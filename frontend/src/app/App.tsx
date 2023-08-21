@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { Canvas, DrawCallback, DrawCallbackContext } from './components/Canvas'
 import { Chat, Message } from './components/Chat'
-import { User, UserList} from './components/UserList'
+import { Player, PlayerList} from './components/PlayerList'
 import { Notification, Notifications } from './components/Notifications'
 import { StartForm } from './components/StartForm'
 import { PromptForm } from './components/PromptForm'
@@ -17,7 +17,7 @@ const conn = new WebSocket(wsUrl, "json");
 
 function App() {
   let [_, setUserId] = useState<string>('...loading...');
-  let [userList, setUserList] = useState<User[]>([]);
+  let [playerList, setPlayerList] = useState<Player[]>([]);
   let [messages, setMessages] = useState<Message[]>([]);
   let [notifications, setNotifications] = useState<Notification[]>([]);
   let [playerNumber, setPlayerNumber] = useState<number>(0);
@@ -48,9 +48,9 @@ function App() {
         case 'players':
           console.log(`Ids: ${d.ids}`);
           // Note: playerNumber (idx) is 1-indexed, not 0
-          let users = d.ids.map((id: string, idx: number) => new User(id, idx+1, "", false))
-                              .filter((u: User) => u.id !== ""); // ignore empty slots
-          setUserList(users);
+          let users = d.ids.map((id: string, idx: number) => new Player(id, idx+1, "", false))
+                              .filter((u: Player) => u.id !== ""); // ignore empty slots
+          setPlayerList(users);
           break;
         case 'chat':
           let m = new Message(d.id, d.playerNumber, d.user, d.timestamp, d.text);
@@ -102,7 +102,7 @@ function App() {
         <Notifications notifications={notifications}/>
         <StartForm gameState={gameState} playerNumber={playerNumber} />
         <PromptForm gameState={gameState} playerRole={playerRole} />
-        <UserList users={userList} />
+        <PlayerList players={playerList} />
         <Chat messages={messages} />
         <Canvas gameState={gameState} playerNumber={playerNumber} currentPlayer={currentPlayer}/>
       </DrawCallbackContext.Provider>
