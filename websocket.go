@@ -157,13 +157,15 @@ func HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	// Send all IDs
 	room.BroadcastConnections()
 
+	ctx := r.Context()
+
 LOOP:
-	for {
+	for ctx.Err() == nil {
 		// Break if we can't parse websocket message, continue if we can't parse app message
 		mt, message, err := conn.ReadMessage()
 		if err != nil || mt == websocket.CloseMessage {
 			log.Printf("error reading message: %s", err)
-			break
+			return
 		}
 
 		// basically the same processing for the parsed message as for the websocket message
@@ -242,4 +244,5 @@ LOOP:
 		}
 
 	}
+	log.Printf("Closing connection: %s", ctx.Err())
 }
