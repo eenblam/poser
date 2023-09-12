@@ -22,7 +22,14 @@ var roomHTML = MustRead("./frontend/dist/app.html")
 
 // The home page serves a page with a button to create a new room
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(indexHTML))
+	switch r.Method {
+	case http.MethodGet:
+		w.Write([]byte(indexHTML))
+	case http.MethodPost:
+		NewRoomHandler(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
 }
 
 // NewRoomHandler just creates a UUID for a new room, then redirects the user.
@@ -33,6 +40,12 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 func NewRoomHandler(w http.ResponseWriter, r *http.Request) {
 	// Homepage requested a new room
 	//TODO could instead do some sort of TinyURL style Base58(SHA256(url, username))
+
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	id := uuid.New()
 	roomPath := fmt.Sprintf("/room/%s", id)
 	http.Redirect(w, r, roomPath, http.StatusFound)
@@ -40,5 +53,9 @@ func NewRoomHandler(w http.ResponseWriter, r *http.Request) {
 
 // RoomHandler serves the room assets
 func RoomHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 	w.Write([]byte(roomHTML))
 }

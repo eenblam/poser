@@ -3,21 +3,29 @@ package main
 import (
 	"log"
 	"net/http"
-
-	"github.com/gorilla/mux"
+	"strings"
 )
 
 func main() {
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("frontend/dist/assets/"))))
+	m := http.NewServeMux()
+	m.HandleFunc("/", Handle)
+	m.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("frontend/dist/assets/"))))
+	log.Fatal(http.ListenAndServe(":8080", m))
+}
 
-	r := mux.NewRouter()
-	r.HandleFunc("/", HomeHandler).Methods("GET")
-	r.HandleFunc("/", NewRoomHandler).Methods("POST")
-	r.HandleFunc("/room/{id:.*}", RoomHandler)
-	//r.HandleFunc("/gallery/{id:[0-9]+}", GalleryHandler)
-
-	r.HandleFunc("/ws/{room}", HandleWebsocket)
-
-	http.Handle("/", r)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+func Handle(w http.ResponseWriter, r *http.Request) {
+	switch p := r.URL.Path; {
+	case p == "/": // home
+		HomeHandler(w, r)
+		return
+	case strings.HasPrefix(p, "/room/"):
+		RoomHandler(w, r)
+		return
+	case strings.HasPrefix(p, "/ws/"):
+		HandleWebsocket(w, r)
+		return
+	default:
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 }

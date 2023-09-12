@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
@@ -80,10 +79,10 @@ func ValidateWebSocketRequest(r *http.Request) bool {
 }
 
 func HandleWebsocket(w http.ResponseWriter, r *http.Request) {
-	roomId, ok := mux.Vars(r)["room"]
-	if !ok {
-		w.WriteHeader(http.StatusNotFound)
-		return
+	//TODO validate a-zA-Z0-9\-
+	roomId := r.URL.Path[len("/ws/"):]
+	if len(roomId) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
 	}
 
 	room := GetOrCreateRoom(roomId)
