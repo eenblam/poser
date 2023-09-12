@@ -53,17 +53,11 @@ var upgrader = websocket.Upgrader{
 	Subprotocols: []string{"json"},
 }
 
-type Server struct {
-	RoomCache sync.Map
-}
+var RoomCache = sync.Map{}
 
-func NewServer() *Server {
-	return &Server{RoomCache: sync.Map{}}
-}
-
-func (s *Server) GetOrCreateRoom(roomId string) *Room {
+func GetOrCreateRoom(roomId string) *Room {
 	//TODO get roomSize from / form
-	room, loaded := s.RoomCache.LoadOrStore(roomId, NewRoom(roomId, roomSize))
+	room, loaded := RoomCache.LoadOrStore(roomId, NewRoom(roomId, roomSize))
 	if !loaded {
 		log.Printf("Created new room %s", roomId)
 	}
@@ -85,14 +79,14 @@ func ValidateWebSocketRequest(r *http.Request) bool {
 	return false
 }
 
-func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
+func HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	roomId, ok := mux.Vars(r)["room"]
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	room := s.GetOrCreateRoom(roomId)
+	room := GetOrCreateRoom(roomId)
 
 	if !ValidateWebSocketRequest(r) {
 		w.WriteHeader(http.StatusBadRequest)
@@ -136,7 +130,7 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Closing connection to %s", conn.RemoteAddr())
 		if room.Remove(conn) == 0 { // If everyone has now left, delete the room
 			log.Printf("Deleting room %s", room.ID)
-			s.RoomCache.Delete(room.ID)
+			RoomCache.Delete(room.ID)
 		} else { // Otherwise, let remaining users know this user left
 			room.BroadcastConnections()
 		}

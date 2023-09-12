@@ -29,9 +29,8 @@ const (
 type Room struct {
 	// This could also be a sync.Map,
 	// but I don't think this use case fits what that's optimized for.
-	mux    sync.Mutex
-	Server *Server
-	ID     string
+	mux sync.Mutex
+	ID  string
 	// Map to check membership of conn, as well as count of active players
 	Conns map[*Connection]bool
 	// Maximum number of players in room
