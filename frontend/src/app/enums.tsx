@@ -4,6 +4,9 @@ enum State {
   Drawing = "Drawing",
   Voting = "Voting",
   PoserGuessing = "PoserGuessing",
+  PoserWon = "PoserWon",
+  PoserWonByTie = "PoserWonByTie",
+  PoserLost = "PoserLost",
 }
 
 enum Role {

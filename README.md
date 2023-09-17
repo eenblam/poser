@@ -25,7 +25,8 @@ Current roadmap:
 * [x] Basic backend (creating/joining/leaving rooms, chat, sharing drawing data)
 * [x] Simple shared canvas
 * [x] Basic game implementation: assign user colors and implement turns
-* [ ] Advanced game implementation: voting on the end result, guess for the fake artist
+* [x] Advanced game implementation: voting on the end result
+* [ ] Advanced game implementation: guess for the fake artist (can be done in chat for now)
 * [ ] Make the UI look nicer
 * [ ] UX: custom user names and color picker
 * [ ] Gallery: choose to save your final work, content mod tools, etc.

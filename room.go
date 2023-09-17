@@ -11,6 +11,8 @@ import (
 
 var ErrRoomFull = errors.New("room is full")
 var ErrGameInProgress = errors.New("game is in progress")
+var ErrVotedTwice = errors.New("player has already voted")
+var ErrInvalidVote = errors.New("player voted for invalid player")
 
 type Role string
 
@@ -129,19 +131,28 @@ func BroadcastType[T any](room *Room, from *Connection, messageType string, mess
 func (r *Room) BroadcastConnections() {
 	r.mux.Lock()
 	defer r.mux.Unlock()
+	r.broadcastConnectionsUnsafe()
+}
 
-	// Build list of IDs
-	ids := make([]string, 0)
+func (r *Room) broadcastConnectionsUnsafe() {
+	// Build list of entries
+	entries := make([]ScoreBoardEntry, 0)
 	// Get these from slots in order to maintain player order
+	var votes = 0
 	for _, conn := range r.Slots {
 		if conn == nil {
-			ids = append(ids, "")
+			entries = append(entries, ScoreBoardEntry{ID: "", Votes: 0})
 		} else {
-			ids = append(ids, conn.ID)
+			if r.Game.State == Waiting { // PlayerStates not initialized!
+				votes = 0
+			} else {
+				votes = r.Game.PlayerStates[conn.PlayerNumber-1].VotesAgainst
+			}
+			entries = append(entries, ScoreBoardEntry{ID: conn.ID, Votes: votes})
 		}
 	}
 	// Create JSON
-	bs, err := MakeMessage[PlayersMessage]("players", PlayersMessage{IDs: ids})
+	bs, err := MakeMessage[PlayersMessage]("players", PlayersMessage{Players: entries})
 	if err != nil {
 		log.Printf("Error marshalling connections: %s", err)
 		return
@@ -242,11 +253,36 @@ func (r *Room) EndTurn(player int) {
 	if r.Game.State == Drawing {
 		r.publishPlayerTurn(r.Game.Drawing + 1)
 	} else if r.Game.State == Voting {
-		//TODO prompt players to vote
 		r.notifyAllUnsafe("Voting time! Vote for your favorite drawing.", false)
-		//TODO remove this
-		r.notifyAllUnsafe("(Voting is not yet implemented!)", true)
 		return
+	}
+}
+
+func (r *Room) Vote(playerNumber int, voteNumber int) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	err := r.Game.Vote(playerNumber, voteNumber)
+	if err == ErrVotedTwice || err == ErrInvalidVote {
+		log.Printf("vote ignored: %s", err)
+		return
+	} else if err != nil {
+		log.Printf("error voting: %s", err)
+		r.abortGameUnsafe(fmt.Sprintf("Couldn't vote: %s", err))
+		return
+	}
+	BroadcastType[*VoteMessage](r, nil, "vote", &VoteMessage{
+		PlayerNumber: playerNumber + 1,
+		Vote:         voteNumber + 1,
+	})
+	r.broadcastConnectionsUnsafe()
+	r.broadcastStateUnsafe()
+	if r.Game.State == PoserWon {
+		r.notifyAllUnsafe("The poser wins!", false)
+	} else if r.Game.State == PoserWonByTie {
+		r.notifyAllUnsafe("Voting tied! The poser wins!", false)
+	} else if r.Game.State == PoserGuessing {
+		r.notifyAllUnsafe("The poser was caught! Now they have to guess what they were drawing.", false)
 	}
 }
 

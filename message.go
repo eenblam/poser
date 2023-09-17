@@ -54,7 +54,12 @@ type TurnMessage struct {
 
 // PlayersMessage notifies a client of the current players in the game.
 type PlayersMessage struct {
-	IDs []string `json:"ids"`
+	Players []ScoreBoardEntry `json:"players"`
+}
+
+type ScoreBoardEntry struct {
+	ID    string `json:"id"`
+	Votes int    `json:"votes"`
 }
 
 // PromptMessage, sent by the Muse to the server, contains the Muse's prompt.
@@ -70,6 +75,12 @@ type RoleMessage struct {
 // StateMessage notifies a client of the current state of the game.
 type StateMessage struct {
 	State State `json:"state"`
+}
+
+// VoteMessage is sent by a client to the server to indicate their vote.
+type VoteMessage struct {
+	PlayerNumber int `json:"playerNumber"`
+	Vote         int `json:"vote"`
 }
 
 // NotificationMessage is used to provide messages from the server to the client.

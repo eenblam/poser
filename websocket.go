@@ -181,6 +181,7 @@ LOOP:
 				log.Printf("Error unmarshalling chat message: %s", err)
 				continue LOOP
 			}
+			//TODO validate non-empty
 			//TODO check timestamp?
 			//TODO sanitize text
 			// Set user ID, ignore anything client may have set.
@@ -207,6 +208,8 @@ LOOP:
 				log.Printf("Error unmarshalling draw message: %s", err)
 				continue LOOP
 			}
+			//TODO validate non-empty, validate values
+			//TODO validate free-draw so players can't draw out of turn
 			//TODO set source user ID
 			err = BroadcastType[*DrawMessage](room, conn, "draw", m)
 			if err != nil {
@@ -223,6 +226,7 @@ LOOP:
 				log.Printf("Error unmarshalling prompt message: %s", err)
 				continue LOOP
 			}
+			//TODO validate non-empty
 			go room.SetPrompt(m.Prompt)
 		case "start":
 			// Nothing to parse from data
@@ -236,6 +240,17 @@ LOOP:
 			}
 			//TODO maybe just return an error here?
 			go room.Start()
+		case "vote":
+			if room.Game.State != Voting {
+				conn.Notify("You cannot vote at this time.", true)
+				continue LOOP
+			}
+			m := &VoteMessage{}
+			if err := json.Unmarshal(data, m); err != nil {
+				log.Printf("Error unmarshalling vote message: %s", err)
+				continue LOOP
+			}
+			go room.Vote(conn.PlayerNumber-1, m.Vote-1)
 		default:
 			//DEBUG Just broadcast messages to all other room members for now
 			log.Printf("%s:%s: unexpected message: %s", room.ID, conn.RemoteAddr(), message)

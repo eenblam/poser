@@ -46,11 +46,11 @@ function App() {
           setPlayerNumber(d.playerNumber);
           break;
         case 'players':
-          console.log(`Ids: ${d.ids}`);
+          console.log(`Players: ${d.players}`);
           // Note: playerNumber (idx) is 1-indexed, not 0
-          let users = d.ids.map((id: string, idx: number) => new Player(id, idx+1, "", false))
-                              .filter((u: Player) => u.id !== ""); // ignore empty slots
-          setPlayerList(users);
+          let players = d.players.map((p: any, idx: number) => new Player(p.id, idx+1, "", false, p.votes))
+                              .filter((u: Player) => u.id !== ""); // ignore empty slots));
+          setPlayerList(players);
           break;
         case 'chat':
           let m = new Message(d.id, d.playerNumber, d.user, d.timestamp, d.text);
@@ -104,7 +104,7 @@ function App() {
             <Notifications notifications={notifications}/>
             <StartForm gameState={gameState} playerNumber={playerNumber} />
             <PromptForm gameState={gameState} playerRole={playerRole} />
-            <PlayerList players={playerList} />
+            <PlayerList gameState={gameState} players={playerList} />
           </div>
           <Chat messages={messages} />
           <Canvas gameState={gameState} playerNumber={playerNumber} currentPlayer={currentPlayer}/>

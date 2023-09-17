@@ -12,12 +12,19 @@ var ErrInvalidState = errors.New("invalid game state")
 // This can be made a room config variable later
 const maxRounds = 2
 
+// Value for PlayerState.Vote when player has not voted
+const NoVote = -1
+
 // Player states
 type PlayerState struct {
 	// Turns taken by player so far
 	TurnsTaken int
 	// Index of player's number in Game.Players
 	Index int
+	// Vote is the PlayerNumber of the player this player voted for
+	Vote int
+	// VotesAgainst is the number of players who think this player is the Poser
+	VotesAgainst int
 }
 
 // Game states
@@ -29,6 +36,9 @@ const (
 	Drawing       State = "Drawing"
 	Voting        State = "Voting"
 	PoserGuessing State = "PoserGuessing"
+	PoserWon      State = "PoserWon"
+	PoserWonByTie State = "PoserWonByTie"
+	PoserLost     State = "PoserLost"
 	// ValidatingGuess?
 )
 
@@ -86,6 +96,9 @@ func (g *Game) Start(players []int) error {
 		g.PlayerStates[p] = &PlayerState{
 			TurnsTaken: 0,
 			Index:      i,
+			// Set Vote to roomSize, which is 1 + max player number
+			Vote:         NoVote,
+			VotesAgainst: 0,
 		}
 	}
 
@@ -144,4 +157,54 @@ func (g *Game) EndTurn(player int) error {
 	// Otherwise, advance to next player
 	g.Drawing = g.Players[nextIndex]
 	return nil
+}
+
+func (g *Game) Vote(playerNumber int, voteNumber int) error {
+	if g.State != Voting {
+		return ErrInvalidState
+	}
+	if g.PlayerStates[playerNumber].Vote != NoVote {
+		// Player already voted
+		return ErrVotedTwice
+	}
+	for _, p := range g.Players {
+		if p != voteNumber {
+			continue
+		}
+		// Valid vote! Set it.
+		g.PlayerStates[playerNumber].Vote = voteNumber
+		g.PlayerStates[voteNumber].VotesAgainst++
+
+		for _, ps := range g.PlayerStates {
+			if ps.Vote == NoVote { // Someone hasn't voted, continue
+				return nil
+			}
+		}
+		{ // Everyone has voted! Tally them up and find the winner.
+			// Not trying to be hyper-efficient here, N is tiny.
+			maxVote := 0
+			for _, ps := range g.PlayerStates {
+				if ps.VotesAgainst > maxVote {
+					maxVote = ps.VotesAgainst
+				}
+			}
+			// Find all players with max votes to detect a tie
+			tiedPlayers := make([]int, 0)
+			for pn, ps := range g.PlayerStates {
+				if ps.VotesAgainst == maxVote {
+					tiedPlayers = append(tiedPlayers, pn)
+				}
+			}
+			if len(tiedPlayers) > 1 { // Tie
+				//TODO tie fails
+				g.State = PoserWonByTie
+			} else if tiedPlayers[0] == g.Poser { // Caught
+				g.State = PoserGuessing
+			} else { // Not caught
+				g.State = PoserWon
+			}
+			return nil
+		}
+	}
+	return ErrInvalidVote
 }
