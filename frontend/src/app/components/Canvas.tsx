@@ -95,9 +95,9 @@ function Canvas(props: CanvasProps) {
         if (canvasRef.current === null) { return; }
         if (canvasWrapperRef.current === null) { return; }
         const canvas = canvasRef.current;
-        const canvasWrapper = canvasWrapperRef.current;
-        canvas.width = canvasWrapper.clientWidth;
-        canvas.height = canvasWrapper.clientHeight;
+        //const canvasWrapper = canvasWrapperRef.current;
+        //canvas.width = canvasWrapper.clientWidth;
+        //canvas.height = canvasWrapper.clientHeight;
 
         const context = canvas.getContext('2d');
         if (context === null) { return; }
