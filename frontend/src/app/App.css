@@ -71,3 +71,23 @@ body, #root {
 .inactive {
   display: none;
 }
+
+#app-wrapper {
+  height: 80%;
+  display: grid;
+  /* ??? */
+  /* grid-auto-rows: minmax(100px, auto); */
+  grid-template-rows: auto;
+}
+
+#ui-wrapper {
+  grid-row: 1;
+}
+
+#chat-widget {
+  grid-row: 2;
+}
+
+#canvas-wrapper {
+  grid-row: 3;
+}

@@ -97,16 +97,20 @@ function App() {
   return (
     <>
       <h1>Poser</h1>
-      <WebSocketContext.Provider value={connRef.current}>
-      <DrawCallbackContext.Provider value={drawRef.current}>
-        <Notifications notifications={notifications}/>
-        <StartForm gameState={gameState} playerNumber={playerNumber} />
-        <PromptForm gameState={gameState} playerRole={playerRole} />
-        <PlayerList players={playerList} />
-        <Chat messages={messages} />
-        <Canvas gameState={gameState} playerNumber={playerNumber} currentPlayer={currentPlayer}/>
-      </DrawCallbackContext.Provider>
-      </WebSocketContext.Provider>
+      <div id="app-wrapper">
+        <WebSocketContext.Provider value={connRef.current}>
+        <DrawCallbackContext.Provider value={drawRef.current}>
+          <div id="ui-wrapper">
+            <Notifications notifications={notifications}/>
+            <StartForm gameState={gameState} playerNumber={playerNumber} />
+            <PromptForm gameState={gameState} playerRole={playerRole} />
+            <PlayerList players={playerList} />
+          </div>
+          <Chat messages={messages} />
+          <Canvas gameState={gameState} playerNumber={playerNumber} currentPlayer={currentPlayer}/>
+        </DrawCallbackContext.Provider>
+        </WebSocketContext.Provider>
+      </div>
     </>
   )
 }
