@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef } from 'react';
 import WebSocketContext from '../WebSocketContext';
 import { State } from '../enums.tsx'
+import './Canvas.css';
 
 
 class DrawCallback {
