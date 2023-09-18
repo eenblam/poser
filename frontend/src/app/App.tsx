@@ -18,6 +18,7 @@ const conn = new WebSocket(wsUrl, "json");
 function App() {
   let [_, setUserId] = useState<string>('...loading...');
   let [playerList, setPlayerList] = useState<Player[]>([]);
+  let [prompt, setPrompt] = useState<string>("You are the poser! Just act cool, play along, and try to guess what you're drawing.");
   let [messages, setMessages] = useState<Message[]>([]);
   let [playerNumber, setPlayerNumber] = useState<number>(0);
   let [gameState, setGameState] = useState<State>(State.Waiting);
@@ -65,6 +66,9 @@ function App() {
           console.log(`Notification: ${msg.toWSMessage()}`);
           setMessages((messages) => [...messages, msg]);
           break;
+        case 'prompt':
+          setPrompt(d.prompt);
+          break;
         case 'role':
           setPlayerRole(d.role);
           break;
@@ -101,7 +105,7 @@ function App() {
         <WebSocketContext.Provider value={connRef.current}>
         <DrawCallbackContext.Provider value={drawRef.current}>
           <div id="ui-wrapper">
-            <HUD gameState={gameState} currentPlayer={currentPlayer} playerRole={playerRole} prompt={"NOTIMPLEMENTED"}/>
+            <HUD gameState={gameState} currentPlayer={currentPlayer} playerRole={playerRole} prompt={prompt}/>
             <StartForm gameState={gameState} playerNumber={playerNumber} />
             <PromptForm gameState={gameState} playerRole={playerRole} />
             <PlayerList gameState={gameState} players={playerList} />

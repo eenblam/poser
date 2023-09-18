@@ -62,7 +62,8 @@ type ScoreBoardEntry struct {
 	Votes int    `json:"votes"`
 }
 
-// PromptMessage, sent by the Muse to the server, contains the Muse's prompt.
+// PromptMessage is used for communicating a prompt.
+// Sent by the Muse to the server, as well as from server to Artists.
 type PromptMessage struct {
 	Prompt string `json:"prompt"`
 }

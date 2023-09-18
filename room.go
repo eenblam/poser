@@ -195,7 +195,7 @@ func (r *Room) Start() {
 	r.notifyAllUnsafe("Game starting! The Muse is contemplating...", false)
 	r.broadcastStateUnsafe()
 
-	// Notify Muse
+	// Notify Muse of role
 	muse := r.Slots[r.Game.Muse]
 	muse.Notify("You are the Muse! Pick a prompt for the round.", false)
 	// Send role to Muse
@@ -206,6 +206,24 @@ func (r *Room) Start() {
 		return
 	}
 	err = muse.WriteMessage(websocket.TextMessage, bs)
+	if err != nil {
+		log.Printf("error sending role message: %s", err)
+		r.abortGameUnsafe("Whoops! There was an error starting the game.")
+		return
+	}
+	// Notify poser of role
+	poser := r.Slots[r.Game.Poser]
+	poser.Notify(
+		"You are the poser! Just act cool, play along, and try to guess what you're drawing.",
+		false,
+	)
+	bs, err = MakeMessage("role", &RoleMessage{Role: Poser})
+	if err != nil {
+		log.Printf("error marshalling role message: %s", err)
+		r.abortGameUnsafe("Whoops! There was an error starting the game.")
+		return
+	}
+	err = poser.WriteMessage(websocket.TextMessage, bs)
 	if err != nil {
 		log.Printf("error sending role message: %s", err)
 		r.abortGameUnsafe("Whoops! There was an error starting the game.")
@@ -225,15 +243,25 @@ func (r *Room) SetPrompt(prompt string) {
 	}
 	r.broadcastStateUnsafe()
 
-	// Notify everyone but Poser of prompt
 	poser := r.Slots[r.Game.Poser]
-	poser.Notify(
-		"You are the poser! Just act cool, play along, and try to guess what you're drawing.",
-		false,
-	)
-	for c := range r.Conns {
-		if c != poser {
-			c.Notify(fmt.Sprintf("The prompt is: %s", prompt), false)
+	{ // Notify everyone but Poser of prompt
+		bs, err := MakeMessage("prompt", &PromptMessage{Prompt: prompt})
+		if err != nil {
+			log.Printf("error marshalling prompt message: %s", err)
+			r.abortGameUnsafe("Whoops! There was an error starting the game.")
+			return
+		}
+		for c := range r.Conns {
+			if c != poser {
+				c.Notify(fmt.Sprintf("The prompt is: %s", prompt), false)
+				err = c.WriteMessage(websocket.TextMessage, bs)
+				if err != nil {
+					log.Printf("error sending prompt message: %s", err)
+					//TODO not sure we want to abort here; we don't abort if the notification fails, do we?
+					//r.abortGameUnsafe("Whoops! There was an error starting the game.")
+					return
+				}
+			}
 		}
 	}
 	r.publishPlayerTurn(r.Game.Drawing + 1)
