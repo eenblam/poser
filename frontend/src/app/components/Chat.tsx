@@ -10,8 +10,9 @@ interface ChatProps {
 function Chat(props: ChatProps) {
     const messages = props.messages;
     const chatMessages = messages.sort((a,b) => a.timestamp-b.timestamp).map((m: Message) => {
-        const className = `player-${m.playerNumber}`
-        return (<p key={m.id} className={className}><ChatItem message={m} /></p>);
+        const className = m.playerNumber === 0 ? "notification" : `player-${m.playerNumber}`;
+        const label = m.playerNumber === 0 ? "" : `Player #${m.playerNumber}: `;
+        return (<p key={m.id} className={className}>{label}{m.text}</p>);
     }
     );
     const messagesEltRef = useRef<HTMLDivElement>(null);
@@ -31,19 +32,6 @@ function Chat(props: ChatProps) {
                 </div>
                 <ChatInput />
             </div>
-        </div>
-    );
-}
-
-interface ChatItemProps {
-    message: Message;
-}
-
-function ChatItem(props: ChatItemProps) {
-    const m = props.message;
-    return (
-        <div>
-            <p>Player #{m.playerNumber}: {m.text}</p>
         </div>
     );
 }
@@ -107,6 +95,5 @@ function ChatInput() {
 
 export {
     Chat,
-    ChatItem,
     Message,
 }
