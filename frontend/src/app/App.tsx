@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { Canvas, DrawCallback, DrawCallbackContext } from './components/Canvas'
 import { Chat, Message } from './components/Chat'
+import { HUD } from './components/HUD'
 import { Player, PlayerList} from './components/PlayerList'
 import { StartForm } from './components/StartForm'
 import { PromptForm } from './components/PromptForm'
@@ -100,6 +101,7 @@ function App() {
         <WebSocketContext.Provider value={connRef.current}>
         <DrawCallbackContext.Provider value={drawRef.current}>
           <div id="ui-wrapper">
+            <HUD gameState={gameState} currentPlayer={currentPlayer} playerRole={playerRole} prompt={"NOTIMPLEMENTED"}/>
             <StartForm gameState={gameState} playerNumber={playerNumber} />
             <PromptForm gameState={gameState} playerRole={playerRole} />
             <PlayerList gameState={gameState} players={playerList} />
